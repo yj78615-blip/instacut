@@ -11,7 +11,15 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from .head import head_box, overlaps
+from .head import overlaps, subject_box
+
+# 회피 강도는 좌표의 출처에 따라 다르다. 추측(fallback)까지 엄격히 지키면
+# 말풍선이 전부 아래로 몰려 시선 흐름(P-6)이 깨진다.
+TOLERANCE = {
+    "gemini": 0.06,    # 몸 전체를 정확히 안다 — 엄격히 피한다
+    "haar": 0.12,      # 얼굴만 안다 — 몸은 걸쳐도 된다
+    "fallback": 0.40,  # 추측일 뿐이다 — 느슨하게
+}
 
 FONT_PATH = r"C:\Windows\Fonts\malgun.ttf"
 FONT_BOLD = r"C:\Windows\Fonts\malgunbd.ttf"
@@ -168,7 +176,14 @@ def _to_art_ratio(box, w: int, art_top: int, art_h: int):
 
 
 def _pick_zone(
-    used: set[str], w: int, art_top: int, art_h: int, head=None, prev=None, shift: float = 0.0
+    used: set[str],
+    w: int,
+    art_top: int,
+    art_h: int,
+    head=None,
+    prev=None,
+    shift: float = 0.0,
+    tolerance: float = 0.12,
 ) -> str | None:
     """시선 흐름대로 자리를 고른다 (P-6).
 
@@ -191,10 +206,11 @@ def _pick_zone(
         if name in used:
             continue
         box = _to_art_ratio(_zone_box(name, w, art_top, art_h, shift), w, art_top, art_h)
-        # 자리의 12% 미만이 스치는 정도는 허용한다. 8% 로 뒀더니 머리 모서리가
+        # 자리의 일부가 스치는 정도는 허용한다. 8% 로 뒀더니 머리 모서리가
         # 8.6% 걸쳤다고 위쪽 자리를 통째로 버리고 말풍선이 그림 아래로 밀려났다.
-        # 말풍선은 자리 안에서 실제 텍스트 크기만큼만 그려지므로 이 정도는 안 닿는다
-        if head and overlaps(box, head, tolerance=0.12):
+        # 말풍선은 자리 안에서 실제 텍스트 크기만큼만 그려지므로 이 정도는 안 닿는다.
+        # 검출에 실패해 가정값을 쓸 때는 호출자가 tolerance 를 크게 준다 (아래 참조)
+        if head and overlaps(box, head, tolerance=tolerance):
             continue
         return name
     return None
@@ -332,10 +348,10 @@ def compose_cut(
     # 그림이 캔버스 전체를 채운다 — 흰 띠 없음
     img = fit_to_canvas(src, ART_W, ART_H)
 
-    # 머리 위치를 먼저 알아야 자리를 고를 수 있다 (P-7)
-    detected = head is not None
+    # 인물 위치를 먼저 알아야 자리를 고를 수 있다 (P-7)
+    source = "saved" if head is not None else ""
     if head is None:
-        head, detected = head_box(img)
+        head, source = subject_box(img)
 
     # 말풍선은 왼쪽 위가 1순위다(P-6). ControlNet 이 인물을 오른쪽에 세우지만,
     # 그래도 왼쪽에 서면 그림을 뒤집어 자리를 비운다 (그림에 글자가 없으니 어색하지 않다).
@@ -354,13 +370,17 @@ def compose_cut(
     if narrations:
         _narration(draw, narrations, ART_W, ART_H)
 
+    # 좌표를 얼마나 믿을 수 있느냐에 따라 회피 강도를 정한다.
+    # 저장된 값(saved)은 사용자가 고쳤을 수 있으므로 가장 정확한 것으로 취급한다.
+    tolerance = TOLERANCE.get(source, TOLERANCE["gemini"])
+
     used: set[str] = set()
     prev_zone: str | None = None
     for t in balloons:
         zone = (
             t.get("pos")
             if t.get("pos") in ZONES
-            else _pick_zone(used, ART_W, 0, ART_H, head_used, prev_zone, shift)
+            else _pick_zone(used, ART_W, 0, ART_H, head_used, prev_zone, shift, tolerance)
         )
         if zone is None:  # 얼굴을 피할 자리가 없다 — 가장 덜 겹치는 자리에 놓는다
             zone = next((z for z in ZONE_PRIORITY if z not in used), ZONE_PRIORITY[-1])
@@ -372,7 +392,7 @@ def compose_cut(
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_path, "PNG")
-    return out_path, head, detected
+    return out_path, head, source
 
 
 def compose_project(project_dir: Path, project: dict, only: int | None = None) -> list[Path]:
@@ -384,15 +404,17 @@ def compose_project(project_dir: Path, project: dict, only: int | None = None) -
         if not raw.exists():
             print(f"  {cut['index']:2d}번 컷: raw 그림이 없습니다 — render 먼저 실행하세요")
             continue
-        # 검출은 한 번만. 기록해두면 재합성이 빨라지고, 틀렸을 때 사용자가 고칠 수 있다
-        saved = cut.get("head_box")
-        path, head, detected = compose_cut(
+        # 좌표는 한 번만 구한다. 기록해두면 재합성이 공짜고(API 재호출 없음),
+        # 틀렸을 때 사용자가 project.json 에서 고칠 수 있다.
+        saved = cut.get("subject_box") or cut.get("head_box")  # head_box 는 예전 이름
+        path, box, source = compose_cut(
             raw, cut["texts"], project_dir / cut["out_image"], tuple(saved) if saved else None
         )
         if not saved:
-            cut["head_box"] = list(head)
+            cut["subject_box"] = [round(v, 3) for v in box]
+            cut.pop("head_box", None)
         made.append(path)
-        tag = "" if (saved or detected) else "  (머리 검출 실패 → 가정값 사용)"
+        tag = {"gemini": "  (인물 전체)", "haar": "  (얼굴만)", "fallback": "  (검출 실패 → 가정값)"}.get(source, "")
         print(f"  {cut['index']:2d}번 컷 → {cut['out_image']}{tag}")
     return made
 
@@ -428,7 +450,7 @@ def _demo() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         Image.new("RGB", (896, 1152), (255, 0, 0)).save(tmp / "raw.png")
-        out, _, _ = compose_cut(
+        out, _, _src = compose_cut(
             tmp / "raw.png",
             [
                 {"type": "narration", "content": "첫 출근 날 아침."},
@@ -466,7 +488,7 @@ def _demo() -> None:
         Image.new("RGB", (1024, 1024), (255, 0, 0)).save(tmp3 / "raw.png")
 
         def white_rows(texts):
-            out, _, _ = compose_cut(tmp3 / "raw.png", texts, tmp3 / f"o{len(texts[0]['content'])}.png")
+            out, _, _src = compose_cut(tmp3 / "raw.png", texts, tmp3 / f"o{len(texts[0]['content'])}.png")
             im = Image.open(out).convert("RGB")
             # 자리 우선순위가 바뀌면 말풍선이 좌우 어디로든 갈 수 있으니 폭 전체를 훑는다
             return sum(
@@ -543,6 +565,13 @@ def _demo() -> None:
 
     # P-7: 머리가 화면을 다 덮으면(클로즈업) 놓을 자리가 없다고 답해야 한다 — 밖으로 내보내려고
     assert _pick_zone(set(), OUT_W, 0, OUT_H, (0.0, 0.0, 1.0, 1.0)) is None
+
+    # 검출 실패 시 가정값(상단 절반)이 들어와도 위쪽 자리를 쓸 수 있어야 한다.
+    # 추측 때문에 시선 흐름을 깨면 안 된다 — 느슨한 tolerance 를 주는 이유.
+    from .head import FALLBACK_BOX
+
+    loose = _pick_zone(set(), OUT_W, 0, OUT_H, FALLBACK_BOX, tolerance=0.40)
+    assert loose in UPPER, f"가정값인데도 위쪽 자리를 못 썼습니다: {loose}"
 
     # 얼굴이 화면 전체를 덮는 극단적 경우에도 말풍선은 그려져야 한다 (자리를 못 피해도 포기하지 않는다)
     with tempfile.TemporaryDirectory() as tmp2:

@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+import os
+
 import cv2
 import numpy as np
 from PIL import Image
@@ -22,8 +24,13 @@ GROW_UP = 0.45  # 위로 (머리카락)
 GROW_SIDE = 0.16
 GROW_DOWN = 0.12  # 아래로 (턱·목)
 
-# 검출 실패 시 가정하는 머리 위치. 컷툰에서 인물은 대개 가운데 위쪽에 크게 있다.
-FALLBACK_BOX = (0.22, 0.0, 0.78, 0.46)
+# 검출 실패 시 가정하는 머리 위치.
+#
+# 처음엔 (0.22, 0.0, 0.78, 0.46) 으로 화면 상단 절반을 잡았는데, 그러면 위쪽 말풍선
+# 자리의 58% 를 덮어 자리가 통째로 막힌다. 양식화된 캐릭터에서 Haar 가 자주 실패하므로
+# **추측 하나 때문에 말풍선이 전부 아래로 몰리는 일**이 실제로 생겼다.
+# 인물이 있을 법한 가운데만 보호하고 가장자리는 열어둔다.
+FALLBACK_BOX = (0.34, 0.12, 0.66, 0.48)
 
 _CASCADES = (
     ("haarcascade_frontalface_default.xml", False),
@@ -81,6 +88,32 @@ def head_box(img: Image.Image) -> tuple[tuple[float, float, float, float], bool]
     return (found, True) if found else (FALLBACK_BOX, False)
 
 
+def subject_box(img: Image.Image, use_api: bool = True) -> tuple[tuple[float, float, float, float], str]:
+    """말풍선이 피해야 할 영역과 그 출처.
+
+    출처에 따라 신뢰도가 다르므로 호출자가 회피 강도를 조절한다 (compose.TOLERANCE).
+
+      gemini   — 인물 **몸 전체**. 배경 인물과 주인공도 구분한다. 가장 정확
+      haar     — 얼굴만. 실사풍에는 잘 맞지만 양식화된 캐릭터는 놓친다
+      fallback — 가정값. 추측이므로 느슨하게 적용해야 한다
+
+    로컬 검출을 여섯 가지(엣지·Haar·밝기·YOLO·원·윤곽) 시도했는데 양식화된
+    캐릭터에서는 전부 실패했다. 픽셀에 "사람다움"이 없기 때문이다.
+    """
+    if use_api and os.environ.get("GOOGLE_API_KEY", "").strip():
+        try:
+            from . import gemini
+
+            box = gemini.locate_subject(img)
+            if box:
+                return box, "gemini"
+        except Exception as e:  # 네트워크·쿼터·형식 무엇이든 로컬 검출로 내려간다
+            print(f"  (좌표 질의 실패 → 로컬 검출로 대체: {str(e)[:80]})")
+
+    face = detect_head(img)
+    return (face, "haar") if face else (FALLBACK_BOX, "fallback")
+
+
 def overlaps(box_a, box_b, tolerance: float = 0.0) -> bool:
     """두 사각형이 겹치는지. tolerance 만큼은 스쳐도 괜찮은 것으로 본다."""
     ax0, ay0, ax1, ay1 = box_a
@@ -107,9 +140,18 @@ def _demo() -> None:
     assert detected is False
     assert box == FALLBACK_BOX
 
-    # 폴백 영역은 가운데 위쪽을 덮어야 한다 (인물이 대개 있는 곳)
+    # API 를 끄면 로컬 경로로만 간다 (출처가 함께 온다)
+    box2, source = subject_box(blank, use_api=False)
+    assert source == "fallback" and box2 == FALLBACK_BOX
+    canvas2 = Image.new("RGB", (600, 800), "white")
+    assert subject_box(canvas2, use_api=False)[1] in ("haar", "fallback")
+
+    # 폴백은 가운데(인물이 대개 있는 곳)만 보호하고 가장자리는 열어둬야 한다.
+    # 너무 넓으면 말풍선 자리를 다 막아 시선 흐름이 깨진다.
     fx0, fy0, fx1, fy1 = FALLBACK_BOX
-    assert fx0 < 0.5 < fx1 and fy0 == 0.0 and fy1 > 0.35
+    assert fx0 < 0.5 < fx1, "가운데를 덮지 않습니다"
+    assert fx0 > 0.25 and fx1 < 0.75, "좌우로 너무 넓습니다 (말풍선 자리를 막는다)"
+    assert (fx1 - fx0) * (fy1 - fy0) < 0.20, "폴백 영역이 화면의 20% 를 넘습니다"
 
     # 확장 규칙: 검출된 얼굴보다 머리 영역이 항상 크고 위로 더 뻗어야 한다
     canvas = Image.new("RGB", (400, 500), "white")
