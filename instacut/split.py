@@ -139,7 +139,7 @@ black slacks, no accessories`
       "scene_en": "english scene description",
       "texts": [
         {{"type": "narration", "content": "한국어 나레이션"}},
-        {{"type": "dialogue", "content": "한국어 대사"}}
+        {{"type": "dialogue", "content": "한국어 대사", "speaker": "주인공"}}
       ]
     }}
   ]
@@ -147,6 +147,14 @@ black slacks, no accessories`
 
 type은 narration(나레이션), dialogue(대사), thought(속마음) 중 하나다.
 텍스트가 없는 컷은 "texts": [] 로 둔다.
+
+**speaker — 누가 말하는가.** dialogue 와 thought 에는 반드시 넣는다.
+- 주인공이 말하거나 생각하면 `"주인공"`
+- 다른 인물이면 원고에 나온 대로 (`"선배"`, `"점원"`, `"엄마"` …)
+- 나레이션은 화자가 없으므로 speaker 를 넣지 않는다
+
+말풍선 꼬리가 이 사람을 향하게 되므로 틀리면 만화가 성립하지 않는다.
+원고에서 누가 한 말인지 분명하지 않으면 `"주인공"` 으로 둔다.
 """
 
 
@@ -214,6 +222,12 @@ def validate(data: dict, n_cuts: int) -> list[str]:
             warnings.append(f"{idx}번 컷 대사가 {total}자입니다 (상한 {MAX_TEXT_LEN}자)")
 
         for t in cut.get("texts", []):
+            # 대사·속마음에는 화자가 있어야 한다. 없으면 주인공으로 둔다 —
+            # 말풍선 꼬리가 이 값을 보고 누구를 향할지 정한다.
+            if t.get("type") in ("dialogue", "thought") and not (t.get("speaker") or "").strip():
+                t["speaker"] = "주인공"
+                warnings.append(f"{idx}번 컷 대사에 화자가 없어 '주인공'으로 뒀습니다: {t.get('content', '')[:14]}")
+
             content = t.get("content", "")
             # 대사가 영어로 번역돼 돌아오는 것이 이 단계의 대표적 실패다
             if content and not re.search(r"[가-힣]", content):
@@ -316,6 +330,29 @@ def _demo() -> None:
     assert any("컷 수가 3가 아니라 2개" in w for w in warns), warns
     # 대사가 영어로 번역돼 돌아오는 실패를 잡아야 한다
     assert any("한글이 없습니다" in w for w in warns), warns
+
+    # 화자 — 대사·속마음에는 반드시 있어야 하고, 없으면 주인공으로 채운다
+    speaker_data = {
+        "style": data["style"],
+        "cuts": [
+            {
+                "index": 1,
+                "beat": "x",
+                "scene_en": "x",
+                "texts": [
+                    {"type": "dialogue", "content": "화자 없는 대사"},
+                    {"type": "thought", "content": "속마음", "speaker": "선배"},
+                    {"type": "narration", "content": "나레이션"},
+                ],
+            }
+        ],
+    }
+    sw = validate(speaker_data, 1)
+    texts = speaker_data["cuts"][0]["texts"]
+    assert texts[0]["speaker"] == "주인공", "화자가 없는 대사를 채우지 않았습니다"
+    assert texts[1]["speaker"] == "선배", "주어진 화자를 덮어썼습니다"
+    assert "speaker" not in texts[2], "나레이션에 화자를 넣었습니다"
+    assert any("화자가 없어" in w for w in sw), sw
 
     project = build_project(data, "테스트", "원고 원문", seed_base=42)
     assert len(project["cuts"]) == 2

@@ -235,9 +235,12 @@ projects/2026-08-14-첫출근날/
       // 틀렸으면 직접 고칠 수 있고, 고친 값은 덮어쓰지 않는다.
       "subject_box": [0.42, 0.46, 0.61, 0.67],   // x0, y0, x1, y1 (캔버스 대비 비율)
       // pos 미지정 시 좌상단부터 순서대로 자동 배치. [4]에서 실제 좌표가 채워진다
+      // speaker — 누가 말하는가. 말풍선 꼬리가 이 사람을 향한다.
+      // 나레이션은 화자가 없다. 대사·속마음에 없으면 "주인공"으로 채운다.
       "texts": [
-        { "type": "narration", "content": "첫 출근 날 아침.", "pos": "top" },
-        { "type": "dialogue",  "content": "심장 터질 것 같아...", "pos": "left-upper" }
+        { "type": "narration", "content": "첫 출근 날 아침." },
+        { "type": "dialogue",  "content": "심장 터질 것 같아...", "speaker": "주인공", "pos": "left-upper" },
+        { "type": "dialogue",  "content": "커피 마실래?", "speaker": "선배" }
       ],
       "raw_image": "raw/cut_01.png",
       "out_image": "out/cut_01.png",

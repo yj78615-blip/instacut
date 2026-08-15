@@ -85,6 +85,18 @@ SENTENCE = re.compile(r"[^.!?…]+[.!?…]*")
 OVERLAP_RECT = 10
 OVERLAP_ELLIPSE = 0.22  # 조각 높이 대비 비율
 
+# 생각 꼬리는 인물까지 이어진다.
+#
+# 짧게 두면 인물과 말풍선 사이의 배경(나무)에서 끊겨 **그 배경이 생각하는 것처럼** 보인다.
+# 실제로 그렇게 만들었다가 두 번 지적받았다.
+# 큰 점 세 개로 길게 이었을 때는 배경 위에 흩어져 어색했으므로,
+# 작은 점을 촘촘히 놓아 궤적이 보이게 한다 — 말풍선에서 인물로 이어지는 선이 읽힌다.
+# 점을 인물 쪽에 몰아 놓는다. 말풍선 근처에 두면 그 사이의 배경(나무)에 걸려
+# 배경이 생각하는 것처럼 보인다 — 마지막 점이 얼굴에 닿아야 누구인지 분명해진다.
+TAIL_DOTS = (0.34, 0.56, 0.76, 0.93)  # 말풍선 → 인물 얼굴 사이의 상대 위치
+TAIL_SIZES = (10, 8, 6, 5)  # 인물에 가까울수록 작아진다
+TAIL_REACH = 1.0  # 얼굴까지
+
 
 def fit_to_canvas(img: Image.Image, w: int = OUT_W, h: int = OUT_H) -> Image.Image:
     """생성 해상도를 인스타 규격으로 맞춘다. 비율이 다르면 중앙 기준으로 자른다."""
@@ -231,6 +243,29 @@ def _narration(draw, texts: list[str], w: int, h: int) -> None:
     _draw_lines(draw, lines, font, size, x0 + PAD, y0 + PAD * 0.55)
 
 
+def _edge_point(box, target, ellipse: bool) -> tuple[float, float]:
+    """말풍선 중심에서 target 방향으로 나아가다 테두리와 만나는 점.
+
+    꼬리를 여기서 뻗어야 인물을 정확히 겨눈다. 예전에는 좌/우 × 위/옆 네 방향만
+    있어서 대각선에 있는 인물에게는 방향만 대충 맞았다.
+    """
+    x0, y0, x1, y1 = box
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    rx, ry = max(1.0, (x1 - x0) / 2), max(1.0, (y1 - y0) / 2)
+    dx, dy = target[0] - cx, target[1] - cy
+    dist = max(1e-6, (dx * dx + dy * dy) ** 0.5)
+    ux, uy = dx / dist, dy / dist
+
+    if ellipse:
+        # 타원 방정식으로 교점을 구한다
+        denom = max(1e-6, ((ux / rx) ** 2 + (uy / ry) ** 2) ** 0.5)
+        t = 1.0 / denom
+    else:
+        # 사각형은 먼저 닿는 변까지의 거리
+        t = min(rx / abs(ux) if abs(ux) > 1e-6 else 1e9, ry / abs(uy) if abs(uy) > 1e-6 else 1e9)
+    return (cx + ux * t, cy + uy * t)
+
+
 def _balloon(
     draw,
     text: str,
@@ -278,15 +313,16 @@ def _balloon(
     x_left = max(w * 0.02, min(w * zx, w - max_bw - w * 0.03))
     y = max(art_top + art_h * 0.02, min(art_top + art_h * zy, art_top + art_h - total_h - art_h * 0.03))
 
-    # 꼬리는 말하는 인물을 향한다. 인물 위치를 모르면 자리 반대편으로 가정한다
+    # 꼬리가 겨눌 지점 — 인물의 얼굴께(상자 위쪽 1/3)를 향한다.
+    # 인물 위치를 모르면 자리 반대편에 있다고 가정한다.
     if head:
-        head_cx = (head[0] + head[2]) / 2 * w
+        target = ((head[0] + head[2]) / 2 * w, art_top + (head[1] + (head[3] - head[1]) * 0.3) * art_h)
     else:
-        head_cx = w * (0.25 if zone.startswith("right") else 0.75)
-    to_left = head_cx < x_left + max_bw / 2  # 인물이 말풍선보다 왼쪽에 있나
+        target = (w * (0.25 if zone.startswith("right") else 0.75), art_top + art_h * 0.5)
 
-    # 말풍선이 화면 중간보다 아래면 인물이 위에 있다 → 꼬리를 위로 붙인다
-    tail_up = (y + total_h / 2) > art_top + art_h * 0.5
+    to_left = target[0] < x_left + max_bw / 2  # 인물이 말풍선보다 왼쪽에 있나
+    # 말풍선이 인물보다 아래면 꼬리를 위로 붙인다
+    tail_up = (y + total_h / 2) > target[1]
 
     # 꼬리가 위로 가면 첫 조각에, 옆/아래로 가면 마지막 조각에 붙인다
     tail_idx = 0 if tail_up else len(boxes) - 1
@@ -299,29 +335,29 @@ def _balloon(
 
         if thought:
             draw.ellipse([x0, y, x1, y1], fill="white", outline="black", width=3)
-            if last:  # 꼬리 점은 한 조각에만
-                for k, r in enumerate((13, 8, 5)):
-                    if tail_up:  # 인물이 위에 있다 — 점이 위로 올라간다
-                        cx = x0 + bw * (0.3 if to_left else 0.7) - k * (14 if to_left else -14)
-                        cy = y - 12 - k * 17
-                    else:
-                        cx = (x0 - 14 - k * 22) if to_left else (x1 + 14 + k * 22)
-                        cy = y1 + 10 + k * 16
-                    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill="white", outline="black", width=3)
+            if last:  # 꼬리 점은 한 조각에만 — 말풍선에서 인물까지 이어 놓는다
+                sx, sy = _edge_point((x0, y, x1, y1), target, ellipse=True)
+                dx, dy = target[0] - sx, target[1] - sy
+                for frac, r in zip(TAIL_DOTS, TAIL_SIZES):
+                    step = frac * TAIL_REACH
+                    cx, cy = sx + dx * step, sy + dy * step
+                    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill="white", outline="black", width=2)
             tx, ty, cw = x0 + (bw - tw) / 2, y + (bh - th) / 2, tw
         else:
             draw.rounded_rectangle([x0, y, x1, y1], radius=22, fill="white", outline="black", width=3)
-            if last:
-                if tail_up:  # 꼬리를 말풍선 위쪽 모서리에서 인물 쪽으로 뻗는다
-                    base_x = x0 + bw * (0.28 if to_left else 0.72)
-                    tip_x = base_x + (-30 if to_left else 30)
-                    pts = [(base_x - 20, y + 6), (base_x + 20, y + 6), (tip_x, y - 38)]
-                else:
-                    tail_y = y1 - bh * 0.28
-                    tip, base = (x0 - 34, x0 + 6) if to_left else (x1 + 34, x1 - 6)
-                    pts = [(base, tail_y), (base, tail_y + 34), (tip, tail_y + 14)]
+            if last:  # 꼬리를 인물 쪽으로 겨눈다
+                sx, sy = _edge_point((x0, y, x1, y1), target, ellipse=False)
+                dx, dy = target[0] - sx, target[1] - sy
+                dist = max(1.0, (dx * dx + dy * dy) ** 0.5)
+                ux, uy = dx / dist, dy / dist
+                # 대사 꼬리는 삼각형이라 인물까지 잇지 않는다 — 방향만 가리키면 읽힌다
+                tip_len = max(38.0, min(70.0, dist * 0.5))
+                tip = (sx + ux * tip_len, sy + uy * tip_len)
+                # 뿌리는 진행 방향에 수직으로 벌린다
+                px, py = -uy * 22, ux * 22
+                pts = [(sx + px, sy + py), (sx - px, sy - py), tip]
                 draw.polygon(pts, fill="white", outline="black")
-                draw.line([pts[0], pts[2], pts[1]], fill="black", width=3)
+                draw.line([pts[0], tip, pts[1]], fill="black", width=3)
             tx, ty, cw = x0 + PAD, y + PAD * 0.7, bw - PAD * 2
 
         _draw_lines(draw, g, font, size, tx, ty, center_w=cw)  # 말풍선 안 텍스트는 가운데 정렬
@@ -500,6 +536,31 @@ def _demo() -> None:
         one = white_rows([{"type": "dialogue", "content": "짧은 대사다."}])
         two = white_rows([{"type": "dialogue", "content": "짧은 대사다. 문장이 하나 더 붙었다."}])
         assert two > one, (one, two)  # 문장이 늘면 조각이 늘어 세로로 길어진다
+
+    # 꼬리 시작점은 말풍선 테두리 위에 있고, 인물 쪽을 향해야 한다
+    box_t = (100.0, 100.0, 300.0, 200.0)
+    for tgt in ((600.0, 150.0), (50.0, 150.0), (200.0, 500.0), (200.0, 10.0), (500.0, 450.0)):
+        for is_ellipse in (False, True):
+            ex, ey = _edge_point(box_t, tgt, is_ellipse)
+            # 테두리 위(중심과 target 사이)에 있어야 한다
+            assert 99 <= ex <= 301 and 99 <= ey <= 201, (ex, ey, tgt, is_ellipse)
+            # 중심에서 target 방향으로 나아간 점이어야 한다
+            cx, cy = 200.0, 150.0
+            assert (ex - cx) * (tgt[0] - cx) >= -1 and (ey - cy) * (tgt[1] - cy) >= -1, (ex, ey, tgt)
+
+    # 대각선에 있는 인물에게는 꼬리도 대각선으로 나가야 한다 (예전엔 4방향뿐이었다)
+    diag = _edge_point(box_t, (500.0, 450.0), False)
+    assert diag[0] > 200 and diag[1] > 150, diag
+
+    # 생각 꼬리는 인물까지 이어져야 한다 — 중간에서 끊기면 그 자리의 배경이 생각하는 것처럼 보인다
+    assert list(TAIL_DOTS) == sorted(TAIL_DOTS), "점이 멀어지는 순서여야 합니다"
+    assert len(TAIL_DOTS) == len(TAIL_SIZES)
+    assert list(TAIL_SIZES) == sorted(TAIL_SIZES, reverse=True), "인물 쪽으로 갈수록 작아져야 합니다"
+    # 마지막 점이 얼굴 가까이 닿아야 "이 인물이 생각한다"가 읽힌다
+    assert TAIL_DOTS[-1] * TAIL_REACH > 0.85, "꼬리가 인물까지 닿지 않습니다"
+    assert TAIL_DOTS[-1] * TAIL_REACH <= 1.0, "꼬리가 인물을 지나칩니다"
+    # 첫 점이 말풍선에 붙어 있으면 그 사이 배경에 걸린다 — 인물 쪽에 몰아야 한다
+    assert TAIL_DOTS[0] > 0.25, f"첫 점이 말풍선에 너무 가깝습니다: {TAIL_DOTS[0]}"
 
     # 아래쪽 자리는 화면 중간보다 확실히 아래여야 한다 (그래야 꼬리가 위로 붙는다)
     assert ZONES[LOWER[0]][1] + ZONE_H / 2 > 0.5, "아래 자리가 중간보다 위에 있습니다"
