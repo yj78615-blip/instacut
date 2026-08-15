@@ -1,0 +1,95 @@
+{
+  "title": "숲",
+  "source_text": "숲에 들어온 지 한 시간쯤 됐을 때 길이 사라졌다.\n\n분명 아까 저 나무를 본 것 같았다. 표시를 해둘 걸 그랬다. 같은 자리를 돌고 있는 건지 아닌지도 알 수 없었다.\n\n해가 기울기 시작했다. 나뭇잎 사이로 들어오던 빛이 점점 붉어졌고, 그림자가 길어졌다.\n\n그때 멀리서 물소리가 들렸다. 물길을 따라 내려가면 사람이 사는 곳이 나온다고, 어디선가 읽은 적이 있었다.",
+  "style": {
+    "art_style_ko": "차분한 수채 느낌, 안개 낀 초록과 회색, 거친 연필선",
+    "art_style_en": "soft watercolor painting, gentle wet-on-wet washes, muted low-saturation palette, misty green and grey tones, foggy hazy atmosphere, rough pencil linework, textured sketchy graphite outlines, soft color bleed, low contrast",
+    "character_ko": "20대 후반 한국인 남성, 볕에 그을린 옅은 갈색 피부, 짧고 헝클어진 검은 머리에 앞머리 있음, 짙은 갈색 아몬드형 눈, 각진 턱의 갸름한 얼굴, 카키색 방수 등산 재킷과 짙은 회색 등산 바지, 액세서리 없음",
+    "character_en": "a Korean man in his late 20s, light tan sun-weathered skin, short messy black hair with loose bangs, dark brown almond eyes, angular jaw with a lean face, olive-khaki waterproof hiking jacket, dark grey hiking trousers, no accessories",
+    "aspect_ratio": "4:5"
+  },
+  "caption": "",
+  "hashtags": [],
+  "cuts": [
+    {
+      "index": 1,
+      "beat": "숲에 들어온 지 한 시간, 발밑의 길이 사라진 걸 알아챈다",
+      "scene_en": "wide full-body shot, a man standing alone deep in a dense forest, a faint trail dissolving into undergrowth at his feet, tall trees crowding on all sides, looking down at the vanished path",
+      "final_prompt": "soft watercolor painting, gentle wet-on-wet washes, muted low-saturation palette, misty green and grey tones, foggy hazy atmosphere, rough pencil linework, textured sketchy graphite outlines, soft color bleed, low contrast, a Korean man in his late 20s, light tan sun-weathered skin, short messy black hair with loose bangs, dark brown almond eyes, angular jaw with a lean face, olive-khaki waterproof hiking jacket, dark grey hiking trousers, no accessories, wide full-body shot, a man standing alone deep in a dense forest, a faint trail dissolving into undergrowth at his feet, tall trees crowding on all sides, looking down at the vanished path, wide establishing shot, small distant figure, subject occupies about one third of the frame height, full body visible from head to feet, vast surrounding environment dominates the frame, camera far from the subject, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 695425565,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "숲에 들어온 지 한 시간쯤 됐을 때 길이 사라졌다."
+        }
+      ],
+      "raw_image": "raw/cut_01.png",
+      "out_image": "out/cut_01.png",
+      "locked": false
+    },
+    {
+      "index": 2,
+      "beat": "낯익은 나무를 보고 같은 자리를 도는 건 아닐까 불안해한다",
+      "scene_en": "medium shot, the man turning his head to look uneasily at a gnarled tree trunk, one hand half-raised, brow furrowed with uncertainty, identical trees receding into haze behind him",
+      "final_prompt": "soft watercolor painting, gentle wet-on-wet washes, muted low-saturation palette, misty green and grey tones, foggy hazy atmosphere, rough pencil linework, textured sketchy graphite outlines, soft color bleed, low contrast, a Korean man in his late 20s, light tan sun-weathered skin, short messy black hair with loose bangs, dark brown almond eyes, angular jaw with a lean face, olive-khaki waterproof hiking jacket, dark grey hiking trousers, no accessories, medium shot, the man turning his head to look uneasily at a gnarled tree trunk, one hand half-raised, brow furrowed with uncertainty, identical trees receding into haze behind him, wide establishing shot, small distant figure, subject occupies about one third of the frame height, full body visible from head to feet, vast surrounding environment dominates the frame, camera far from the subject, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 695425565,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "thought",
+          "content": "분명 아까 저 나무를 본 것 같았다."
+        },
+        {
+          "type": "thought",
+          "content": "표시를 해둘 걸 그랬다."
+        }
+      ],
+      "raw_image": "raw/cut_02.png",
+      "out_image": "out/cut_02.png",
+      "locked": false
+    },
+    {
+      "index": 3,
+      "beat": "해가 기울며 붉은 빛이 스며들고 그림자가 길어진다",
+      "scene_en": "wide shot, low reddish sunlight streaming in slanted beams through the leaves, long shadows stretching across the forest floor, the man a small figure standing amid the deepening light",
+      "final_prompt": "soft watercolor painting, gentle wet-on-wet washes, muted low-saturation palette, misty green and grey tones, foggy hazy atmosphere, rough pencil linework, textured sketchy graphite outlines, soft color bleed, low contrast, a Korean man in his late 20s, light tan sun-weathered skin, short messy black hair with loose bangs, dark brown almond eyes, angular jaw with a lean face, olive-khaki waterproof hiking jacket, dark grey hiking trousers, no accessories, wide shot, low reddish sunlight streaming in slanted beams through the leaves, long shadows stretching across the forest floor, the man a small figure standing amid the deepening light, wide establishing shot, small distant figure, subject occupies about one third of the frame height, full body visible from head to feet, vast surrounding environment dominates the frame, camera far from the subject, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 695425565,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "해가 기울기 시작했다."
+        }
+      ],
+      "raw_image": "raw/cut_03.png",
+      "out_image": "out/cut_03.png",
+      "locked": false
+    },
+    {
+      "index": 4,
+      "beat": "멀리서 물소리가 들리고, 물길을 따라가면 된다는 희망이 스친다",
+      "scene_en": "over-the-shoulder shot, the man pausing and turning his head sharply toward a sound far off to one side, alert and listening, dim trees fading into the dusk beyond",
+      "final_prompt": "soft watercolor painting, gentle wet-on-wet washes, muted low-saturation palette, misty green and grey tones, foggy hazy atmosphere, rough pencil linework, textured sketchy graphite outlines, soft color bleed, low contrast, a Korean man in his late 20s, light tan sun-weathered skin, short messy black hair with loose bangs, dark brown almond eyes, angular jaw with a lean face, olive-khaki waterproof hiking jacket, dark grey hiking trousers, no accessories, over-the-shoulder shot, the man pausing and turning his head sharply toward a sound far off to one side, alert and listening, dim trees fading into the dusk beyond, wide establishing shot, small distant figure, subject occupies about one third of the frame height, full body visible from head to feet, vast surrounding environment dominates the frame, camera far from the subject, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 695425565,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "그때 멀리서 물소리가 들렸다."
+        },
+        {
+          "type": "thought",
+          "content": "물길을 따라 내려가면, 사람 사는 곳이."
+        }
+      ],
+      "raw_image": "raw/cut_04.png",
+      "out_image": "out/cut_04.png",
+      "locked": false
+    }
+  ]
+}

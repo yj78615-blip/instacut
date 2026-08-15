@@ -1,0 +1,17 @@
+# 생성물 — 다시 돌리면 재생성된다
+projects/*/raw/
+projects/*/out/
+outputs/
+# blueprint 는 render.py 가 매번 생성한다 (소스가 아니라 산출물)
+blueprints/
+
+# 캐릭터 레퍼런스는 프로젝트마다 다르므로 예시만 남기지 않는다
+projects/*/character_ref.png
+
+# 파이썬
+.venv/
+__pycache__/
+*.pyc
+
+# comfy 실행 상태
+.comfy/

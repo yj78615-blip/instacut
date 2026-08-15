@@ -1,0 +1,167 @@
+{
+  "title": "첫 출근 날",
+  "source_text": "첫 출근 날 아침이었다.\n\n지하철에서 손잡이를 잡고 서 있는데 심장이 터질 것 같았다. 어제 다려놓은 셔츠가 벌써 구겨진 것 같아서 자꾸 손으로 폈다.\n\n사무실 문 앞에 서서 세 번 심호흡을 했다. 문고리를 잡았다가 놓기를 두 번.\n\n들어가니까 아무도 나를 안 봤다. 다들 자기 화면만 보고 있었다.\n\n자리를 안내받고 앉았다. 모니터가 켜지는 데 한참 걸렸다.\n\n옆자리 선배가 커피 마실 거냐고 물었다. 나는 너무 크게 \"네!\" 하고 대답했다.\n\n탕비실에서 종이컵을 두 개 뽑는 선배 뒷모습을 보면서, 아 여기서 일하는구나 싶었다.\n\n집에 오는 길에는 지하철에서 졸았다. 아침의 그 긴장이 어디로 갔는지 모르겠다.",
+  "style": {
+    "art_style_ko": "심플한 라인 드로잉, 파스텔 톤, 감성적인 느낌",
+    "art_style_en": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading",
+    "character_ko": "20대 초반 신입사원 여성, 어깨에 닿는 단발머리, 갓 다린 흰 셔츠에 검은 슬랙스 차림",
+    "character_en": "young woman in her early 20s, shoulder-length bob haircut, wearing a freshly ironed white button-up shirt and black slacks, first-day office newcomer",
+    "aspect_ratio": "4:5"
+  },
+  "caption": "",
+  "hashtags": [],
+  "cuts": [
+    {
+      "index": 1,
+      "beat": "첫 출근 날 아침의 시작",
+      "scene_en": "a woman standing at the front door of a small apartment in the early morning, holding a bag strap with both hands, looking slightly nervous, soft morning light through the window",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, young woman in her early 20s, shoulder-length bob haircut, wearing a freshly ironed white button-up shirt and black slacks, first-day office newcomer, a woman standing at the front door of a small apartment in the early morning, holding a bag strap with both hands, looking slightly nervous, soft morning light through the window, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 1373158607,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "첫 출근 날 아침이었다."
+        }
+      ],
+      "raw_image": "raw/cut_01.png",
+      "out_image": "out/cut_01.png",
+      "locked": false
+    },
+    {
+      "index": 2,
+      "beat": "지하철에서 긴장하며 셔츠를 자꾸 폄",
+      "scene_en": "a woman standing in a crowded subway car, one hand gripping the overhead handle, the other hand smoothing down the wrinkles on her shirt, tense expression, other passengers blurred in the background",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, young woman in her early 20s, shoulder-length bob haircut, wearing a freshly ironed white button-up shirt and black slacks, first-day office newcomer, a woman standing in a crowded subway car, one hand gripping the overhead handle, the other hand smoothing down the wrinkles on her shirt, tense expression, other passengers blurred in the background, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 239081664,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "심장이 터질 것 같았다."
+        },
+        {
+          "type": "thought",
+          "content": "셔츠가 벌써 구겨졌네."
+        }
+      ],
+      "raw_image": "raw/cut_02.png",
+      "out_image": "out/cut_02.png",
+      "locked": false
+    },
+    {
+      "index": 3,
+      "beat": "사무실 문 앞에서 심호흡하며 망설임",
+      "scene_en": "a woman standing right in front of a closed office door, hand hovering near the door handle, taking a deep breath with eyes closed, shoulders slightly raised",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, young woman in her early 20s, shoulder-length bob haircut, wearing a freshly ironed white button-up shirt and black slacks, first-day office newcomer, a woman standing right in front of a closed office door, hand hovering near the door handle, taking a deep breath with eyes closed, shoulders slightly raised, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 53710185,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "문 앞에서 세 번 심호흡을 했다."
+        }
+      ],
+      "raw_image": "raw/cut_03.png",
+      "out_image": "out/cut_03.png",
+      "locked": false
+    },
+    {
+      "index": 4,
+      "beat": "들어갔지만 아무도 쳐다보지 않음",
+      "scene_en": "a woman standing just inside an open-plan office, looking around uncertainly, while several coworkers sit at their desks facing their monitors, none of them turning to look at her",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, young woman in her early 20s, shoulder-length bob haircut, wearing a freshly ironed white button-up shirt and black slacks, first-day office newcomer, a woman standing just inside an open-plan office, looking around uncertainly, while several coworkers sit at their desks facing their monitors, none of them turning to look at her, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 1592467582,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "아무도 나를 안 봤다."
+        }
+      ],
+      "raw_image": "raw/cut_04.png",
+      "out_image": "out/cut_04.png",
+      "locked": false
+    },
+    {
+      "index": 5,
+      "beat": "안내받은 자리에 앉아 모니터를 기다림",
+      "scene_en": "a woman sitting at an empty office desk, hands resting on her lap, staring at a monitor that is still turning on, waiting quietly",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, young woman in her early 20s, shoulder-length bob haircut, wearing a freshly ironed white button-up shirt and black slacks, first-day office newcomer, a woman sitting at an empty office desk, hands resting on her lap, staring at a monitor that is still turning on, waiting quietly, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 590620972,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "모니터가 켜지는 데 한참 걸렸다."
+        }
+      ],
+      "raw_image": "raw/cut_05.png",
+      "out_image": "out/cut_05.png",
+      "locked": false
+    },
+    {
+      "index": 6,
+      "beat": "옆자리 선배의 물음에 너무 크게 대답함",
+      "scene_en": "a woman sitting at her desk turning toward an older coworker at the next desk who is asking her something, the woman answering with a wide startled expression and an overly eager posture",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, young woman in her early 20s, shoulder-length bob haircut, wearing a freshly ironed white button-up shirt and black slacks, first-day office newcomer, a woman sitting at her desk turning toward an older coworker at the next desk who is asking her something, the woman answering with a wide startled expression and an overly eager posture, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 525901257,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "선배가 커피 마실 거냐 물었다."
+        },
+        {
+          "type": "dialogue",
+          "content": "네!"
+        }
+      ],
+      "raw_image": "raw/cut_06.png",
+      "out_image": "out/cut_06.png",
+      "locked": false
+    },
+    {
+      "index": 7,
+      "beat": "탕비실 선배 뒷모습을 보며 실감함",
+      "scene_en": "a woman watching from behind as an older coworker stands at a small office pantry counter pulling two paper cups from a dispenser, the woman looking on quietly",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, young woman in her early 20s, shoulder-length bob haircut, wearing a freshly ironed white button-up shirt and black slacks, first-day office newcomer, a woman watching from behind as an older coworker stands at a small office pantry counter pulling two paper cups from a dispenser, the woman looking on quietly, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 479341424,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "thought",
+          "content": "아, 나 여기서 일하는구나."
+        }
+      ],
+      "raw_image": "raw/cut_07.png",
+      "out_image": "out/cut_07.png",
+      "locked": false
+    },
+    {
+      "index": 8,
+      "beat": "퇴근길 지하철에서 긴장이 풀려 졺",
+      "scene_en": "a woman sitting on a subway seat in the evening, head tilted and drooping as she dozes off, bag on her lap, relaxed and worn-out expression, empty seats beside her",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, young woman in her early 20s, shoulder-length bob haircut, wearing a freshly ironed white button-up shirt and black slacks, first-day office newcomer, a woman sitting on a subway seat in the evening, head tilted and drooping as she dozes off, bag on her lap, relaxed and worn-out expression, empty seats beside her, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 299655413,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "집에 오는 길엔 지하철에서 졸았다."
+        }
+      ],
+      "raw_image": "raw/cut_08.png",
+      "out_image": "out/cut_08.png",
+      "locked": false
+    }
+  ]
+}

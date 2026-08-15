@@ -1,0 +1,91 @@
+{
+  "_fragment": {
+    "name": "sdxl_pose_t2i",
+    "description": "SDXL base + ControlNet OpenPose. 스틱 피규어로 인물의 위치와 크기를 강제한다. 프롬프트로 구도를 지시하면 모델이 무시하므로, 말풍선 자리를 먼저 정하고 남는 곳에 인물을 세운다 (PRD P-6).",
+    "terminal": false,
+    "inputs": {},
+    "outputs": {
+      "image": { "type": "IMAGE", "from": "8", "port": 0 }
+    },
+    "params": {
+      "ckpt_name": { "type": "STRING", "binds": "1.ckpt_name" },
+      "controlnet_name": { "type": "STRING", "binds": "7.control_net_name" },
+      "pose_image": { "type": "STRING", "binds": "9.image" },
+      "positive": { "type": "STRING", "binds": "2.text" },
+      "negative": { "type": "STRING", "binds": "3.text" },
+      "seed": { "type": "INT", "binds": "5.seed" },
+      "strength": { "type": "FLOAT", "binds": "6.strength", "default": 0.85 },
+      "end_percent": { "type": "FLOAT", "binds": "6.end_percent", "default": 0.75 },
+      "width": { "type": "INT", "binds": "4.width", "default": 1024 },
+      "height": { "type": "INT", "binds": "4.height", "default": 1024 },
+      "steps": { "type": "INT", "binds": "5.steps", "default": 28 },
+      "cfg": { "type": "FLOAT", "binds": "5.cfg", "default": 7.0 },
+      "sampler_name": { "type": "STRING", "binds": "5.sampler_name", "default": "dpmpp_2m" },
+      "scheduler": { "type": "STRING", "binds": "5.scheduler", "default": "karras" }
+    }
+  },
+  "1": {
+    "inputs": { "ckpt_name": "PLACEHOLDER" },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "Load Checkpoint" }
+  },
+  "9": {
+    "inputs": { "image": "PLACEHOLDER" },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Load Pose" }
+  },
+  "7": {
+    "inputs": { "control_net_name": "PLACEHOLDER" },
+    "class_type": "ControlNetLoader",
+    "_meta": { "title": "Load ControlNet" }
+  },
+  "2": {
+    "inputs": { "text": "PLACEHOLDER", "clip": ["1", 1] },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Positive Prompt" }
+  },
+  "3": {
+    "inputs": { "text": "PLACEHOLDER", "clip": ["1", 1] },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Negative Prompt" }
+  },
+  "6": {
+    "inputs": {
+      "strength": 0.85,
+      "start_percent": 0.0,
+      "end_percent": 0.75,
+      "positive": ["2", 0],
+      "negative": ["3", 0],
+      "control_net": ["7", 0],
+      "image": ["9", 0]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": { "title": "Apply Pose" }
+  },
+  "4": {
+    "inputs": { "width": 1024, "height": 1024, "batch_size": 1 },
+    "class_type": "EmptyLatentImage",
+    "_meta": { "title": "Empty Latent Image" }
+  },
+  "5": {
+    "inputs": {
+      "seed": 0,
+      "steps": 28,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": ["1", 0],
+      "positive": ["6", 0],
+      "negative": ["6", 1],
+      "latent_image": ["4", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "KSampler" }
+  },
+  "8": {
+    "inputs": { "samples": ["5", 0], "vae": ["1", 2] },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "VAE Decode" }
+  }
+}

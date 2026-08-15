@@ -1,0 +1,64 @@
+{
+  "_fragment": {
+    "name": "sdxl_base_t2i",
+    "description": "SDXL base 단독 text-to-image. refiner 없음 — 8GB VRAM에서 모델 스왑을 피하려고 뺐다. 해상도 기본값은 인스타 4:5에 가까운 SDXL 버킷(896x1152).",
+    "terminal": false,
+    "inputs": {},
+    "outputs": {
+      "image": { "type": "IMAGE", "from": "6", "port": 0 }
+    },
+    "params": {
+      "ckpt_name": { "type": "STRING", "binds": "1.ckpt_name" },
+      "positive": { "type": "STRING", "binds": "2.text" },
+      "negative": { "type": "STRING", "binds": "3.text" },
+      "seed": { "type": "INT", "binds": "5.seed" },
+      "width": { "type": "INT", "binds": "4.width", "default": 896 },
+      "height": { "type": "INT", "binds": "4.height", "default": 1152 },
+      "steps": { "type": "INT", "binds": "5.steps", "default": 28 },
+      "cfg": { "type": "FLOAT", "binds": "5.cfg", "default": 7.0 },
+      "sampler_name": { "type": "STRING", "binds": "5.sampler_name", "default": "dpmpp_2m" },
+      "scheduler": { "type": "STRING", "binds": "5.scheduler", "default": "karras" }
+    }
+  },
+  "1": {
+    "inputs": { "ckpt_name": "PLACEHOLDER" },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "Load Checkpoint" }
+  },
+  "2": {
+    "inputs": { "text": "PLACEHOLDER", "clip": ["1", 1] },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Positive Prompt" }
+  },
+  "3": {
+    "inputs": { "text": "PLACEHOLDER", "clip": ["1", 1] },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Negative Prompt" }
+  },
+  "4": {
+    "inputs": { "width": 896, "height": 1152, "batch_size": 1 },
+    "class_type": "EmptyLatentImage",
+    "_meta": { "title": "Empty Latent Image" }
+  },
+  "5": {
+    "inputs": {
+      "seed": 0,
+      "steps": 28,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": ["1", 0],
+      "positive": ["2", 0],
+      "negative": ["3", 0],
+      "latent_image": ["4", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "KSampler" }
+  },
+  "6": {
+    "inputs": { "samples": ["5", 0], "vae": ["1", 2] },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "VAE Decode" }
+  }
+}

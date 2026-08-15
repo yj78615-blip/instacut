@@ -1,0 +1,99 @@
+{
+  "title": "퇴근길",
+  "source_text": "여섯 시가 되자마자 가방을 챙겼다.\n\n지하철은 오늘도 사람이 많았다. 문 옆 구석에 겨우 자리를 잡고 섰다.\n\n역에서 나오니 하늘이 아직 밝았다. 여름이라 그런지 해가 많이 길어졌다.\n\n집 앞 편의점에서 아이스크림을 하나 샀다. 오늘은 이걸로 됐다.",
+  "style": {
+    "art_style_ko": "아주 단순한 검은 선화, 굵고 일정한 윤곽선, 평면적인 연한 색, 음영과 질감 없음, 흰 배경",
+    "art_style_en": "minimal black line art, clean thick uniform outlines, flat solid pastel colors, no shading, no gradients, no texture, no rendering, plain white background, extremely simple childlike drawing, minimal detail",
+    "character_ko": "아주 단순한 그림체의 캐릭터 한 명, 크고 둥근 민머리, 점 두 개로 찍은 눈, 짧은 곡선 하나로 그린 웃는 입, 통통한 타원형 몸통, 짧고 뭉툭한 팔다리, 2등신 비율, 코와 귀는 그리지 않음, 옷 주름이나 세부 묘사 없음",
+    "character_en": "solo, a single simple cartoon character alone, large round completely bald head, two small black dot eyes, single curved line smile, no nose, no ears, chubby oval body, short stubby arms and legs, two-heads-tall chibi proportions, clean thick outlines, flat plain shapes, no hair, no clothing details",
+    "aspect_ratio": "4:5"
+  },
+  "caption": "",
+  "hashtags": [],
+  "cuts": [
+    {
+      "index": 1,
+      "beat": "정각 여섯 시, 퇴근하려고 책상에서 가방을 챙긴다",
+      "scene_en": "medium shot of a woman at an office desk, reaching for her bag as she gets ready to leave, a wall clock showing six o'clock behind her, warm end-of-day light through the window",
+      "final_prompt": "minimal black line art, clean thick uniform outlines, flat solid pastel colors, no shading, no gradients, no texture, no rendering, plain white background, extremely simple childlike drawing, minimal detail, solo, a single simple cartoon character alone, large round completely bald head, two small black dot eyes, single curved line smile, no nose, no ears, chubby oval body, short stubby arms and legs, two-heads-tall chibi proportions, clean thick outlines, flat plain shapes, no hair, no clothing details, medium shot of a woman at an office desk, reaching for her bag as she gets ready to leave, a wall clock showing six o'clock behind her, warm end-of-day light through the window, wide establishing shot, small distant figure, subject occupies about one third of the frame height, full body visible from head to feet, vast surrounding environment dominates the frame, camera far from the subject",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed, shading, gradient, texture, cross-hatching, realistic, detailed rendering, 3d, photorealistic, multiple people, crowd, two people, background characters",
+      "seed": 354226308,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "여섯 시가 되자마자 가방을 챙겼다."
+        }
+      ],
+      "raw_image": "raw/cut_01.png",
+      "out_image": "out/cut_01.png",
+      "locked": false
+    },
+    {
+      "index": 2,
+      "beat": "붐비는 지하철 안, 문 옆 구석에 겨우 서 있다",
+      "scene_en": "over-the-shoulder shot inside a crowded subway car, the woman squeezed into a corner beside the door, holding the handrail, surrounded by standing passengers",
+      "final_prompt": "minimal black line art, clean thick uniform outlines, flat solid pastel colors, no shading, no gradients, no texture, no rendering, plain white background, extremely simple childlike drawing, minimal detail, solo, a single simple cartoon character alone, large round completely bald head, two small black dot eyes, single curved line smile, no nose, no ears, chubby oval body, short stubby arms and legs, two-heads-tall chibi proportions, clean thick outlines, flat plain shapes, no hair, no clothing details, over-the-shoulder shot inside a crowded subway car, the woman squeezed into a corner beside the door, holding the handrail, surrounded by standing passengers, wide establishing shot, small distant figure, subject occupies about one third of the frame height, full body visible from head to feet, vast surrounding environment dominates the frame, camera far from the subject",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed, shading, gradient, texture, cross-hatching, realistic, detailed rendering, 3d, photorealistic, multiple people, crowd, two people, background characters",
+      "seed": 354226308,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "지하철은 오늘도 사람이 많았다."
+        },
+        {
+          "type": "narration",
+          "content": "문 옆 구석에 겨우 자리를 잡고 섰다."
+        }
+      ],
+      "raw_image": "raw/cut_02.png",
+      "out_image": "out/cut_02.png",
+      "locked": false
+    },
+    {
+      "index": 3,
+      "beat": "역을 나오니 여름 저녁 하늘이 아직 환하다",
+      "scene_en": "establishing wide shot of the woman stepping out of a subway station exit onto the street, looking up at a still-bright evening sky, long summer daylight over low city rooftops",
+      "final_prompt": "minimal black line art, clean thick uniform outlines, flat solid pastel colors, no shading, no gradients, no texture, no rendering, plain white background, extremely simple childlike drawing, minimal detail, solo, a single simple cartoon character alone, large round completely bald head, two small black dot eyes, single curved line smile, no nose, no ears, chubby oval body, short stubby arms and legs, two-heads-tall chibi proportions, clean thick outlines, flat plain shapes, no hair, no clothing details, establishing wide shot of the woman stepping out of a subway station exit onto the street, looking up at a still-bright evening sky, long summer daylight over low city rooftops, wide establishing shot, small distant figure, subject occupies about one third of the frame height, full body visible from head to feet, vast surrounding environment dominates the frame, camera far from the subject",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed, shading, gradient, texture, cross-hatching, realistic, detailed rendering, 3d, photorealistic, multiple people, crowd, two people, background characters",
+      "seed": 354226308,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "역에서 나오니 하늘이 아직 밝았다."
+        },
+        {
+          "type": "narration",
+          "content": "여름이라 그런지 해가 많이 길어졌다."
+        }
+      ],
+      "raw_image": "raw/cut_03.png",
+      "out_image": "out/cut_03.png",
+      "locked": false
+    },
+    {
+      "index": 4,
+      "beat": "집 앞 편의점에서 아이스크림을 사며 하루를 마무리한다",
+      "scene_en": "medium shot of the woman standing outside a convenience store at dusk, holding a single ice cream bar and unwrapping it, a small content smile, glowing store sign behind her",
+      "final_prompt": "minimal black line art, clean thick uniform outlines, flat solid pastel colors, no shading, no gradients, no texture, no rendering, plain white background, extremely simple childlike drawing, minimal detail, solo, a single simple cartoon character alone, large round completely bald head, two small black dot eyes, single curved line smile, no nose, no ears, chubby oval body, short stubby arms and legs, two-heads-tall chibi proportions, clean thick outlines, flat plain shapes, no hair, no clothing details, medium shot of the woman standing outside a convenience store at dusk, holding a single ice cream bar and unwrapping it, a small content smile, glowing store sign behind her, wide establishing shot, small distant figure, subject occupies about one third of the frame height, full body visible from head to feet, vast surrounding environment dominates the frame, camera far from the subject",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed, shading, gradient, texture, cross-hatching, realistic, detailed rendering, 3d, photorealistic, multiple people, crowd, two people, background characters",
+      "seed": 354226308,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "집 앞 편의점에서 아이스크림을 하나 샀다."
+        },
+        {
+          "type": "narration",
+          "content": "오늘은 이걸로 됐다."
+        }
+      ],
+      "raw_image": "raw/cut_04.png",
+      "out_image": "out/cut_04.png",
+      "locked": false
+    }
+  ]
+}

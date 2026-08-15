@@ -1,0 +1,179 @@
+{
+  "title": "첫 출근 날 v2",
+  "source_text": "첫 출근 날 아침이었다.\n\n지하철에서 손잡이를 잡고 서 있는데 심장이 터질 것 같았다. 어제 다려놓은 셔츠가 벌써 구겨진 것 같아서 자꾸 손으로 폈다.\n\n사무실 문 앞에 서서 세 번 심호흡을 했다. 문고리를 잡았다가 놓기를 두 번.\n\n들어가니까 아무도 나를 안 봤다. 다들 자기 화면만 보고 있었다.\n\n자리를 안내받고 앉았다. 모니터가 켜지는 데 한참 걸렸다.\n\n옆자리 선배가 커피 마실 거냐고 물었다. 나는 너무 크게 \"네!\" 하고 대답했다.\n\n탕비실에서 종이컵을 두 개 뽑는 선배 뒷모습을 보면서, 아 여기서 일하는구나 싶었다.\n\n집에 오는 길에는 지하철에서 졸았다. 아침의 그 긴장이 어디로 갔는지 모르겠다.",
+  "style": {
+    "art_style_ko": "심플한 라인 드로잉, 파스텔 톤, 감성적인 느낌",
+    "art_style_en": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading",
+    "character_ko": "20대 초반 한국 남성, 밝은 피부톤, 짧고 단정한 검은 머리에 살짝 내린 앞머리, 부드러운 짙은 갈색 눈, 갸름한 얼굴형, 다림질한 연하늘색 버튼업 셔츠에 베이지 슬랙스, 액세서리 없음",
+    "character_en": "a Korean man in his early 20s, fair skin, short neat black hair with slightly parted bangs, soft dark brown almond eyes, slim oval face, freshly ironed light blue button-up shirt, beige slacks, no accessories",
+    "aspect_ratio": "4:5"
+  },
+  "caption": "",
+  "hashtags": [],
+  "cuts": [
+    {
+      "index": 1,
+      "beat": "첫 출근 날 아침, 하루의 시작",
+      "scene_en": "wide full-body shot of a young man walking through a quiet subway station in the morning, carrying a shoulder bag, soft morning light coming through the windows",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, a Korean man in his early 20s, fair skin, short neat black hair with slightly parted bangs, soft dark brown almond eyes, slim oval face, freshly ironed light blue button-up shirt, beige slacks, no accessories, wide full-body shot of a young man walking through a quiet subway station in the morning, carrying a shoulder bag, soft morning light coming through the windows, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 1373158607,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "첫 출근 날 아침이었다."
+        }
+      ],
+      "raw_image": "raw/cut_01.png",
+      "out_image": "out/cut_01.png",
+      "locked": false
+    },
+    {
+      "index": 2,
+      "beat": "지하철에서 긴장으로 심장이 터질 것 같고 셔츠를 자꾸 편다",
+      "scene_en": "medium shot of the man standing in a moving subway car, one hand gripping the overhead handle, the other hand smoothing down his shirt, tense expression, slightly hunched shoulders",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, a Korean man in his early 20s, fair skin, short neat black hair with slightly parted bangs, soft dark brown almond eyes, slim oval face, freshly ironed light blue button-up shirt, beige slacks, no accessories, medium shot of the man standing in a moving subway car, one hand gripping the overhead handle, the other hand smoothing down his shirt, tense expression, slightly hunched shoulders, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 1373158607,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "thought",
+          "content": "심장이 터질 것 같았다."
+        },
+        {
+          "type": "narration",
+          "content": "셔츠를 자꾸 손으로 폈다."
+        }
+      ],
+      "raw_image": "raw/cut_02.png",
+      "out_image": "out/cut_02.png",
+      "locked": false
+    },
+    {
+      "index": 3,
+      "beat": "사무실 문 앞에서 심호흡하며 문고리를 잡았다 놓는다",
+      "scene_en": "over-the-shoulder shot from behind the man standing in front of a closed office door, his hand hovering near the door handle, head slightly lowered as he breathes in",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, a Korean man in his early 20s, fair skin, short neat black hair with slightly parted bangs, soft dark brown almond eyes, slim oval face, freshly ironed light blue button-up shirt, beige slacks, no accessories, over-the-shoulder shot from behind the man standing in front of a closed office door, his hand hovering near the door handle, head slightly lowered as he breathes in, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 1373158607,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "문 앞에서 세 번 심호흡을 했다."
+        },
+        {
+          "type": "narration",
+          "content": "문고리를 잡았다 놓기를 두 번."
+        }
+      ],
+      "raw_image": "raw/cut_03.png",
+      "out_image": "out/cut_03.png",
+      "locked": false
+    },
+    {
+      "index": 4,
+      "beat": "들어갔지만 아무도 그를 쳐다보지 않는다",
+      "scene_en": "wide shot of an open-plan office interior, several coworkers sitting at desks facing their monitors, the man standing awkwardly just inside the doorway, no one looking at him",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, a Korean man in his early 20s, fair skin, short neat black hair with slightly parted bangs, soft dark brown almond eyes, slim oval face, freshly ironed light blue button-up shirt, beige slacks, no accessories, wide shot of an open-plan office interior, several coworkers sitting at desks facing their monitors, the man standing awkwardly just inside the doorway, no one looking at him, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 1373158607,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "아무도 나를 안 봤다."
+        },
+        {
+          "type": "narration",
+          "content": "다들 자기 화면만 보고 있었다."
+        }
+      ],
+      "raw_image": "raw/cut_04.png",
+      "out_image": "out/cut_04.png",
+      "locked": false
+    },
+    {
+      "index": 5,
+      "beat": "안내받은 자리에 앉아 모니터가 켜지길 기다린다",
+      "scene_en": "over-the-shoulder shot of the man seated at a desk, hands resting on his lap, staring at a dark monitor that is slowly turning on",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, a Korean man in his early 20s, fair skin, short neat black hair with slightly parted bangs, soft dark brown almond eyes, slim oval face, freshly ironed light blue button-up shirt, beige slacks, no accessories, over-the-shoulder shot of the man seated at a desk, hands resting on his lap, staring at a dark monitor that is slowly turning on, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 1373158607,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "모니터가 켜지는 데 한참 걸렸다."
+        }
+      ],
+      "raw_image": "raw/cut_05.png",
+      "out_image": "out/cut_05.png",
+      "locked": false
+    },
+    {
+      "index": 6,
+      "beat": "옆자리 선배의 커피 제안에 너무 크게 대답한다",
+      "scene_en": "close-up portrait of the man turning his head with wide surprised eyes and an open mouth, mid-reply, a coworker's shoulder visible at the edge of the frame",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, a Korean man in his early 20s, fair skin, short neat black hair with slightly parted bangs, soft dark brown almond eyes, slim oval face, freshly ironed light blue button-up shirt, beige slacks, no accessories, close-up portrait of the man turning his head with wide surprised eyes and an open mouth, mid-reply, a coworker's shoulder visible at the edge of the frame, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 1373158607,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "dialogue",
+          "content": "네!"
+        },
+        {
+          "type": "narration",
+          "content": "나는 너무 크게 대답했다."
+        }
+      ],
+      "raw_image": "raw/cut_06.png",
+      "out_image": "out/cut_06.png",
+      "locked": false
+    },
+    {
+      "index": 7,
+      "beat": "탕비실에서 종이컵을 뽑는 선배 뒷모습을 보며 실감한다",
+      "scene_en": "over-the-shoulder shot from the man's point of view, watching a coworker's back at a small pantry counter pulling two paper cups from a dispenser",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, a Korean man in his early 20s, fair skin, short neat black hair with slightly parted bangs, soft dark brown almond eyes, slim oval face, freshly ironed light blue button-up shirt, beige slacks, no accessories, over-the-shoulder shot from the man's point of view, watching a coworker's back at a small pantry counter pulling two paper cups from a dispenser, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 1373158607,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "thought",
+          "content": "아, 여기서 일하는구나 싶었다."
+        }
+      ],
+      "raw_image": "raw/cut_07.png",
+      "out_image": "out/cut_07.png",
+      "locked": false
+    },
+    {
+      "index": 8,
+      "beat": "퇴근길 지하철에서 졸며 아침의 긴장이 사라졌음을 느낀다",
+      "scene_en": "medium shot of the man sitting on a subway seat in the evening, head tilted and eyes closed, dozing off, relaxed shoulders, empty seats beside him",
+      "final_prompt": "clean minimal line art, thin uniform linework, flat colors, no shading, soft pastel palette, low saturation, muted colors, high key, soft diffused lighting, warm color grading, a Korean man in his early 20s, fair skin, short neat black hair with slightly parted bangs, soft dark brown almond eyes, slim oval face, freshly ironed light blue button-up shirt, beige slacks, no accessories, medium shot of the man sitting on a subway seat in the evening, head tilted and eyes closed, dozing off, relaxed shoulders, empty seats beside him, subject positioned on the right side of the frame, empty uncluttered space on the left third, simple plain background on the left",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 1373158607,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "집에 오는 길엔 지하철에서 졸았다."
+        },
+        {
+          "type": "narration",
+          "content": "아침의 긴장은 어디로 갔을까."
+        }
+      ],
+      "raw_image": "raw/cut_08.png",
+      "out_image": "out/cut_08.png",
+      "locked": false
+    }
+  ]
+}

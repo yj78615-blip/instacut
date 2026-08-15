@@ -1,0 +1,92 @@
+{
+  "_fragment": {
+    "name": "sdxl_charonly_t2i",
+    "description": "SDXL + IP-Adapter(캐릭터 레퍼런스). ControlNet 없음 — 8GB VRAM 에 SDXL·ControlNet·IP-Adapter·CLIP Vision 을 모두 올리면 서버가 죽는다. 캐릭터 스타일을 위치 제어보다 우선한 선택(사용자 결정).",
+    "terminal": false,
+    "inputs": {},
+    "outputs": {
+      "image": { "type": "IMAGE", "from": "8", "port": 0 }
+    },
+    "params": {
+      "ckpt_name": { "type": "STRING", "binds": "1.ckpt_name" },
+      "char_image": { "type": "STRING", "binds": "10.image" },
+      "positive": { "type": "STRING", "binds": "2.text" },
+      "negative": { "type": "STRING", "binds": "3.text" },
+      "seed": { "type": "INT", "binds": "5.seed" },
+      "char_weight": { "type": "FLOAT", "binds": "12.weight", "default": 0.5 },
+      "char_end": { "type": "FLOAT", "binds": "12.end_at", "default": 0.45 },
+      "weight_type": { "type": "STRING", "binds": "12.weight_type", "default": "prompt is more important" },
+      "preset": { "type": "STRING", "binds": "11.preset", "default": "PLUS (high strength)" },
+      "width": { "type": "INT", "binds": "4.width", "default": 896 },
+      "height": { "type": "INT", "binds": "4.height", "default": 1152 },
+      "steps": { "type": "INT", "binds": "5.steps", "default": 28 },
+      "cfg": { "type": "FLOAT", "binds": "5.cfg", "default": 7.0 },
+      "sampler_name": { "type": "STRING", "binds": "5.sampler_name", "default": "dpmpp_2m" },
+      "scheduler": { "type": "STRING", "binds": "5.scheduler", "default": "karras" }
+    }
+  },
+  "1": {
+    "inputs": { "ckpt_name": "PLACEHOLDER" },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "Load Checkpoint" }
+  },
+  "10": {
+    "inputs": { "image": "PLACEHOLDER" },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Load Character Reference" }
+  },
+  "11": {
+    "inputs": { "model": ["1", 0], "preset": "PLUS (high strength)" },
+    "class_type": "IPAdapterUnifiedLoader",
+    "_meta": { "title": "Load IPAdapter" }
+  },
+  "12": {
+    "inputs": {
+      "model": ["11", 0],
+      "ipadapter": ["11", 1],
+      "image": ["10", 0],
+      "weight": 0.5,
+      "start_at": 0.0,
+      "end_at": 0.45,
+      "weight_type": "prompt is more important"
+    },
+    "class_type": "IPAdapter",
+    "_meta": { "title": "Apply Character" }
+  },
+  "2": {
+    "inputs": { "text": "PLACEHOLDER", "clip": ["1", 1] },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Positive Prompt" }
+  },
+  "3": {
+    "inputs": { "text": "PLACEHOLDER", "clip": ["1", 1] },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Negative Prompt" }
+  },
+  "4": {
+    "inputs": { "width": 896, "height": 1152, "batch_size": 1 },
+    "class_type": "EmptyLatentImage",
+    "_meta": { "title": "Empty Latent Image" }
+  },
+  "5": {
+    "inputs": {
+      "seed": 0,
+      "steps": 28,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": ["12", 0],
+      "positive": ["2", 0],
+      "negative": ["3", 0],
+      "latent_image": ["4", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "KSampler" }
+  },
+  "8": {
+    "inputs": { "samples": ["5", 0], "vae": ["1", 2] },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "VAE Decode" }
+  }
+}
