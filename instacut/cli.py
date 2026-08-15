@@ -93,7 +93,15 @@ def cmd_render(args) -> None:
     from .render import render
 
     d, project = _load(args.project)
-    made = render(ROOT, d, project, only=args.cut)
+
+    if args.backend == "gemini" and not args.yes:
+        # 컷당 과금된다. 실수로 수십 컷을 돌리지 않게 한 번 확인한다
+        n = 1 if args.cut else len([c for c in project["cuts"] if not c["locked"]])
+        print(f"Gemini(Nano Banana)로 {n}컷을 생성합니다. 컷당 비용이 발생합니다.")
+        if input("진행할까요? [y/N] ").strip().lower() not in ("y", "yes"):
+            sys.exit("취소했습니다")
+
+    made = render(ROOT, d, project, only=args.cut, backend=args.backend)
     _save(d, project)  # final_prompt 기록
     if made:
         print(f"\n{len(made)}컷 생성 완료 → {d / 'raw'}")
@@ -149,6 +157,13 @@ def main() -> None:
     r = sub.add_parser("render", help="[3] 그림 생성 (텍스트 없음)")
     r.add_argument("cut", nargs="?", type=int, help="특정 컷만")
     r.add_argument("--project")
+    r.add_argument(
+        "--backend",
+        choices=("comfy", "gemini"),
+        default="comfy",
+        help="comfy=로컬 ComfyUI (기본) / gemini=Nano Banana API (컷당 과금, 캐릭터 일관성 강함)",
+    )
+    r.add_argument("--yes", action="store_true", help="비용 확인을 건너뛴다")
     r.set_defaults(func=cmd_render)
 
     c = sub.add_parser("compose", help="[4] 말풍선 얹기")

@@ -221,8 +221,40 @@ def _collect(files: list[dict], cuts: list[dict], project_dir: Path) -> list[Pat
     return made
 
 
-def render(root: Path, project_dir: Path, project: dict, only: int | None = None) -> list[Path]:
-    ensure_server(root)
+def render_gemini(project_dir: Path, project: dict, cuts: list[dict]) -> list[Path]:
+    """Gemini(Nano Banana)로 생성한다. 캐릭터 레퍼런스를 "이 인물"로 이해하므로
+    IP-Adapter 처럼 형태와 배경이 한 다이얼에 묶이지 않는다.
+
+    포즈 이미지를 받지 않으므로 인물 위치 강제(ControlNet)는 없다 —
+    말풍선 자리 예약은 프롬프트 지시(split.reserve_hint)로만 남는다.
+    """
+    from . import gemini
+
+    ref = project_dir / CHAR_REF
+    ref_path = ref if ref.exists() else None
+    if ref_path:
+        print(f"캐릭터 레퍼런스: {ref.name}")
+
+    made = []
+    for cut in cuts:
+        cut["final_prompt"] = assemble_prompt(project, cut)
+        target = project_dir / cut["raw_image"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(gemini.generate(cut["final_prompt"], ref_path))
+        made.append(target)
+        print(f"  {cut['index']:2d}번 컷 → {cut['raw_image']}")
+    return made
+
+
+def render(
+    root: Path,
+    project_dir: Path,
+    project: dict,
+    only: int | None = None,
+    backend: str = "comfy",
+) -> list[Path]:
+    if backend == "comfy":
+        ensure_server(root)
 
     cuts = [
         c
@@ -232,6 +264,9 @@ def render(root: Path, project_dir: Path, project: dict, only: int | None = None
     if not cuts:
         print("생성할 컷이 없습니다 (모두 잠겨 있거나 지정한 컷이 없습니다)")
         return []
+
+    if backend == "gemini":
+        return render_gemini(project_dir, project, cuts)
 
     slug = project_dir.name
     ckpt = discover_checkpoint(root)

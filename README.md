@@ -51,7 +51,25 @@ uv run python -m instacut.cli compose 3    # 텍스트만 (1초, GPU 안 씀)
 
 ### 캐릭터 모델 쓰기
 
-`projects/<제목>/character_ref.png` 를 두면 IP-Adapter 가 그 캐릭터의 형태와 화풍을 가져온다. 텍스트 묘사만으로는 "이 캐릭터"를 재현할 수 없다 — `no nose` 라고 써도 모델이 코를 그린다.
+`projects/<제목>/character_ref.png` 에 캐릭터 그림을 두면 그 캐릭터로 전 컷을 그린다.
+텍스트 묘사만으로는 "이 캐릭터"를 재현할 수 없다 — `no nose` 라고 써도 모델이 코를 그린다.
+
+```bash
+# Nano Banana (권장) — 레퍼런스를 "이 인물"로 이해한다. 컷당 과금
+uv run python -m instacut.cli render --backend gemini
+
+# 로컬 (IP-Adapter) — 비용은 없지만 형태가 무너진다
+uv run python -m instacut.cli render
+```
+
+**백엔드를 고르는 기준.** 로컬 IP-Adapter 는 레퍼런스를 "이미지"로 참조해서 형태와 배경이 한
+다이얼에 묶인다 — 강하게 밀면 배경이 사라지고, 약하게 하면 캐릭터가 깨진다. Nano Banana 는
+레퍼런스를 캐릭터로 이해하므로 그 트레이드오프가 없다. 캐릭터가 중요하면 `--backend gemini`.
+
+```bash
+$env:GOOGLE_API_KEY = "<키>"    # Google AI Studio 에서 발급, 결제 활성화 필요
+uv run python -m instacut.cli render 2 --backend gemini   # 1컷만 먼저 시험
+```
 
 ## 구조
 

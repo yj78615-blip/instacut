@@ -5,8 +5,13 @@ outputs/
 # blueprint 는 render.py 가 매번 생성한다 (소스가 아니라 산출물)
 blueprints/
 
-# 캐릭터 레퍼런스는 프로젝트마다 다르므로 예시만 남기지 않는다
-projects/*/character_ref.png
+# 캐릭터 레퍼런스(character_ref.png)는 커밋한다 — 팀이 같은 캐릭터로 작업해야 하고,
+# 이게 없으면 컷마다 다른 인물이 나온다. 크기도 작다(수 KB).
+
+# 비밀 — API 키는 절대 커밋하지 않는다
+.env
+*.key
+secrets.*
 
 # 파이썬
 .venv/
