@@ -18,9 +18,11 @@
 
 ```bash
 comfy launch --background   # ComfyUI (SDXL 체크포인트 필요)
+copy .env.example .env      # Gemini 백엔드를 쓸 때만 — 키를 채운다
 ```
 
 LLM 은 `claude` CLI 를 헤드리스로 부른다. `ANTHROPIC_API_KEY` 는 필요 없다.
+`GOOGLE_API_KEY` 는 `--backend gemini` 를 쓸 때만 필요하고, 없으면 로컬 경로로만 동작한다.
 
 선택적으로 쓰는 모델:
 
