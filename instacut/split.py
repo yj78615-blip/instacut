@@ -24,34 +24,31 @@ NEGATIVE = (
 # 그림을 먼저 만들고 빈 곳을 찾는 방식은 순서가 거꾸로다. 인물이 어디에 서느냐를
 # 모델이 마음대로 정해버리면 말풍선은 남는 자리로 밀려날 수밖에 없다.
 # 컷의 대사 개수를 세어, 실제로 쓸 자리를 비우도록 프롬프트에 미리 박는다.
+# 말풍선은 위(ZONES y 0.05)와 아래(y 0.70)를 쓴다. 인물은 그 사이 중앙 밴드에 서야 한다.
+# 좌우만 지시하고 세로를 방치하면 인물이 위아래로 붙어 말풍선과 겹친다.
+#
+# 표현은 모두 **프레임 기준(자기중심)** 이다. 인물의 왼손·오른쪽 얼굴처럼 대상 기준으로
+# 말하면 모델이 좌우를 뒤집는다 (COMPOSITION.md 6절, GenSpace 94.55% 대 21.21%).
+# 위치는 컷당 한 마디만 쓴다. 좌우까지 지시했더니 어휘가 쌓여 캐릭터 레퍼런스가 밀렸고,
+# 좌우는 어차피 합성 단계가 그림을 뒤집어 해결한다(P-6).
+MIDDLE = "subject MUST be positioned on the middle horizontal third of the frame"
+
 RESERVE = {
     0: "",  # 나레이션만 있는 컷 — 그림 밖 띠를 쓰므로 구도가 자유롭다
-    1: (
-        "subject positioned on the right side of the frame, "
-        "upper left quadrant completely empty, plain simple background there"
-    ),
-    2: (
-        "subject positioned in the center of the frame, "
-        "upper left quadrant and lower right quadrant completely empty, "
-        "plain simple background in those two corners"
-    ),
+    # 말풍선이 하나면 위쪽만 쓴다 — 인물은 그 아래 어디든 된다
+    1: "subject MUST be positioned on the lower two thirds of the frame",
+    2: MIDDLE,  # 위아래를 다 쓰므로 인물은 그 사이에
 }
-RESERVE_MANY = (
-    "subject small and centered low in the frame, "
-    "upper half and both side margins empty, plain simple background"
-)
+RESERVE_MANY = MIDDLE
 
-# 화자가 둘 이상인 컷 — 대화하는 인물들을 화면 가운데로 모은다.
-# 한쪽에 몰리면 반대쪽이 텅 비고, 말풍선(위/아래)과 인물 사이도 멀어진다.
-RESERVE_DIALOGUE = (
-    "the two characters face each other in the middle of the frame, "
-    "both centered horizontally and vertically, close together, "
-    "upper area and lower area empty with plain simple background, "
-    "no large empty space on either side"
-)
+# 화자가 둘 이상인 컷 — 마주 보게 해야 대화로 읽힌다. 여기만 두 마디를 쓴다.
+RESERVE_DIALOGUE = "two characters facing each other, both " + MIDDLE.replace("subject MUST be", "MUST be")
 
 # 인물이 프레임을 꽉 채우면 말풍선 놓을 자리가 없다. 전 컷에 공통으로 주입해 구도를 넓힌다.
 # 합성 단계에서 그림을 축소하는 방법도 있지만, 그러면 주변에 채울 배경이 없어 흰 여백이 생긴다.
+# 이 어휘들을 "wide establishing shot 과 같은 말" 이라고 보고 걷어냈더니 인물이 화면
+# 절반을 넘게 커졌다(v3). 중복이 아니라 각자 크기 제어에 기여하고 있었다.
+# 수치(`one third`)만으로는 안 된다 — 수치 지시의 준수율은 30~40% 대다(COMPOSITION.md 5절).
 SUBJECT_SCALE = (
     "wide establishing shot, small distant figure, "
     "subject occupies about one third of the frame height, "
@@ -267,6 +264,9 @@ def build_project(data: dict, title: str, source_text: str, seed_base: int | Non
                 "index": i,
                 "beat": cut.get("beat", ""),
                 "scene_en": cut["scene_en"],
+                # 비우면 전 컷 공통 크기(SUBJECT_SCALE)를 쓴다.
+                # 공간이 주인공이 아닌 컷만 여기에 따로 적는다.
+                "scale": cut.get("scale", ""),
                 "final_prompt": None,  # [3]에서 조립되어 기록된다
                 "negative_prompt": NEGATIVE,
                 "seed": shared_seed,
@@ -311,11 +311,13 @@ def reserve_hint(cut: dict) -> str:
 def assemble_prompt(project: dict, cut: dict) -> str:
     """컷 하나의 최종 프롬프트를 조립한다. 화풍·캐릭터·장면·크기·말풍선 자리 순서."""
     style = project["style"]
+    # 전 컷 공통 크기가 기본이지만, 공간이 주인공이 아닌 컷은 따로 지정한다.
+    # 계산대 앞처럼 인물 사이의 거리가 짧은 장면을 원경으로 잡으면 배경만 남는다.
     parts = [
         style["art_style_en"],
         style["character_en"],
         cut["scene_en"],
-        SUBJECT_SCALE,
+        cut.get("scale") or SUBJECT_SCALE,
         reserve_hint(cut),
     ]
     return ", ".join(p.strip() for p in parts if p and p.strip())
@@ -390,9 +392,14 @@ def _demo() -> None:
     assert reserve_hint({"texts": [{"type": "narration", "content": "나레이션"}]}) == ""
     one = reserve_hint({"texts": [{"type": "dialogue", "content": "하나"}]})
     two = reserve_hint({"texts": [{"type": "dialogue", "content": "하나"}, {"type": "thought", "content": "둘"}]})
-    assert "upper left quadrant completely empty" in one
-    assert "upper left quadrant and lower right quadrant" in two, two
-    assert one != two  # 개수가 다르면 비울 자리도 달라야 한다
+    assert "lower two thirds" in one, one  # 말풍선이 위에만 있으면 인물은 그 아래
+    assert "middle horizontal third" in two, two  # 위아래를 다 쓰면 인물은 사이에
+    assert one != two  # 개수가 다르면 인물 자리도 달라야 한다
+    # 위치는 컷당 한 마디만 — 어휘가 쌓이면 캐릭터 레퍼런스가 밀린다 (v2 에서 확인)
+    for hint in (one, two):
+        assert hint.count(",") == 0, f"위치 지시가 여러 마디입니다: {hint}"
+    # 좌우는 프레임 기준으로만 말한다 — 대상 기준은 모델이 뒤집는다
+    assert "character's left" not in one and "subject's left" not in one
 
     # 화자가 둘이면 대화 구도 — 인물들을 가운데로 모은다
     talk = reserve_hint(
@@ -403,7 +410,7 @@ def _demo() -> None:
             ]
         }
     )
-    assert "face each other in the middle" in talk, talk
+    assert "two characters facing each other" in talk, talk
     assert talk != two, "화자가 둘인데 단일 인물 구도를 씁니다"
     # 같은 사람이 두 번 말하면 대화가 아니다
     solo_twice = reserve_hint(
@@ -416,9 +423,9 @@ def _demo() -> None:
     )
     assert solo_twice == two, "화자가 한 명인데 대화 구도를 씁니다"
 
-    # 대사 1개짜리 컷의 프롬프트에는 왼쪽 위를 비우라는 지시가 실제로 들어간다
+    # 대사 1개짜리 컷의 프롬프트에는 인물 자리 지시가 실제로 들어간다
     cut_one = dict(project["cuts"][0], texts=[{"type": "dialogue", "content": "대사"}])
-    assert "upper left quadrant completely empty" in assemble_prompt(project, cut_one)
+    assert "lower two thirds" in assemble_prompt(project, cut_one)
 
     # 원고에 없는 화풍이 조립 단계에서 새로 끼어들면 안 된다
     assert "masterpiece" not in prompt and "8k" not in prompt

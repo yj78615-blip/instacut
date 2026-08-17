@@ -207,7 +207,16 @@ def _pick_zone(
 
     **머리와 겹치는 자리는 건너뛴다 (P-7 > P-6).**
     쓸 자리가 하나도 없으면 None — 호출자가 그림 밖으로 밀어낸다. 얼굴을 덮느니 밖으로 나간다.
+
+    `head` 는 상자 하나이거나 여러 개다. 대화 컷에서 주인공만 피했더니
+    말풍선이 점원 얼굴을 덮었다 — 화면에 있는 사람은 전부 피해야 한다.
     """
+    if head is None:
+        heads = []
+    elif isinstance(head[0], (int, float)):
+        heads = [head]  # 상자 하나
+    else:
+        heads = [b for b in head if b]
     if prev is None:
         # 첫 말풍선은 그림보다 먼저 읽혀야 한다 — 무조건 위쪽 자리
         order = UPPER + LOWER
@@ -224,7 +233,7 @@ def _pick_zone(
         # 8.6% 걸쳤다고 위쪽 자리를 통째로 버리고 말풍선이 그림 아래로 밀려났다.
         # 말풍선은 자리 안에서 실제 텍스트 크기만큼만 그려지므로 이 정도는 안 닿는다.
         # 검출에 실패해 가정값을 쓸 때는 호출자가 tolerance 를 크게 준다 (아래 참조)
-        if head and overlaps(box, head, tolerance=tolerance):
+        if any(overlaps(box, h, tolerance=tolerance) for h in heads):
             continue
         return name
     return None
@@ -473,13 +482,11 @@ def compose_cut(
     if head is None:
         head, source = subject_box(img)
 
-    # 말풍선은 왼쪽 위가 1순위다(P-6). ControlNet 이 인물을 오른쪽에 세우지만,
-    # 그래도 왼쪽에 서면 그림을 뒤집어 자리를 비운다 (그림에 글자가 없으니 어색하지 않다).
-    # 저장·재사용되는 head 는 원본 기준 좌표다. 그래야 재합성할 때 같은 판정이 나온다.
+    # 예전에는 인물이 왼쪽에 서면 그림을 좌우로 뒤집어 왼쪽 위 자리를 비웠다.
+    # "그림에 글자가 없으니 어색하지 않다" 는 전제였는데, 간판이 나오는 순간 깨진다 —
+    # STORE 가 거울상으로 찍혔다. `_pick_zone` 이 머리와 겹치는 자리를 건너뛰므로
+    # 인물이 왼쪽이면 알아서 오른쪽 위를 고른다. 뒤집을 이유가 없다.
     head_used = head
-    if (head[0] + head[2]) / 2 < 0.5:
-        img = img.transpose(Image.FLIP_LEFT_RIGHT)
-        head_used = (1 - head[2], head[1], 1 - head[0], head[3])
 
     draw = ImageDraw.Draw(img, "RGBA")
 
@@ -503,13 +510,16 @@ def compose_cut(
     # 꼬리가 주인공을 겨눈다.
     people = _locate_speakers(img, speakers) if speakers - {"주인공"} else {}
 
+    # 화면에 있는 사람을 전부 피한다. 주인공 상자만 봤을 때는 말풍선이 점원 얼굴을 덮었다.
+    all_heads = [head_used] + [b for b in people.values() if b]
+
     used: set[str] = set()
     prev_zone: str | None = None
     for t in balloons:
         zone = (
             t.get("pos")
             if t.get("pos") in ZONES
-            else _pick_zone(used, ART_W, 0, ART_H, head_used, prev_zone, shift, tolerance)
+            else _pick_zone(used, ART_W, 0, ART_H, all_heads, prev_zone, shift, tolerance)
         )
         if zone is None:  # 얼굴을 피할 자리가 없다 — 가장 덜 겹치는 자리에 놓는다
             zone = next((z for z in ZONE_PRIORITY if z not in used), ZONE_PRIORITY[-1])
@@ -706,25 +716,27 @@ def _demo() -> None:
         assert second in LOWER, f"두 번째가 그림을 지나지 않았습니다: {second}"
         assert second.split("-")[0] != first.split("-")[0], f"좌우가 안 바뀜: {first} → {second}"
 
-    # 인물이 왼쪽에 있으면 그림을 뒤집어 오른쪽으로 보낸다 — 왼쪽 위를 비우기 위해
+    # 그림은 절대 좌우로 뒤집지 않는다 — 간판 글자가 거울상이 된다.
+    # 인물이 왼쪽에 있으면 말풍선이 오른쪽으로 비켜야 한다.
     with tempfile.TemporaryDirectory() as tmp4:
         tmp4 = Path(tmp4)
-        # 왼쪽 절반만 진하게 칠한 그림 = 인물이 왼쪽에 있는 상황
+        # 왼쪽에 인물, 오른쪽 위에 글자 — 글자가 뒤집히면 바로 드러난다
         src4 = Image.new("RGB", (1024, 1024), "white")
-        ImageDraw.Draw(src4).rectangle([0, 0, 400, 1023], fill=(30, 30, 30))
+        d4 = ImageDraw.Draw(src4)
+        d4.rectangle([0, 0, 400, 1023], fill=(30, 30, 30))
+        d4.rectangle([900, 40, 1000, 140], fill=(200, 0, 0))  # 오른쪽 위 표식
         src4.save(tmp4 / "raw.png")
         out4, _, _ = compose_cut(
             tmp4 / "raw.png",
-            [{"type": "dialogue", "content": "왼쪽 위에 와야 한다."}],
+            [{"type": "dialogue", "content": "오른쪽 위로 비켜야 한다."}],
             tmp4 / "out4.png",
             head=(0.10, 0.05, 0.35, 0.40),  # 인물이 왼쪽
         )
         res4 = Image.open(out4).convert("RGB")
-        # 반전됐다면 진한 영역이 오른쪽으로 갔어야 한다
         mid = OUT_H // 2
         left_dark = sum(1 for x in range(20, 400, 10) if sum(res4.getpixel((x, mid))) < 200)
         right_dark = sum(1 for x in range(OUT_W - 400, OUT_W - 20, 10) if sum(res4.getpixel((x, mid))) < 200)
-        assert right_dark > left_dark, f"인물이 오른쪽으로 가지 않았습니다 (좌 {left_dark} / 우 {right_dark})"
+        assert left_dark > right_dark, f"그림이 뒤집혔습니다 (좌 {left_dark} / 우 {right_dark})"
     assert _pick_zone(used_seq, OUT_W, 0, OUT_H) is None  # 자리를 다 쓰면 없다고 한다
 
     # P-7 이 P-6 을 이긴다: 머리가 왼쪽 위에 있으면 1순위를 포기한다
@@ -735,6 +747,15 @@ def _demo() -> None:
 
     # P-7: 머리가 화면을 다 덮으면(클로즈업) 놓을 자리가 없다고 답해야 한다 — 밖으로 내보내려고
     assert _pick_zone(set(), OUT_W, 0, OUT_H, (0.0, 0.0, 1.0, 1.0)) is None
+
+    # 대화 컷 — 상자를 여러 개 주면 전부 피해야 한다.
+    # 주인공만 피했을 때 말풍선이 점원 얼굴을 덮었다.
+    clerk, hero = (0.05, 0.05, 0.45, 0.45), (0.55, 0.05, 0.95, 0.45)
+    assert _pick_zone(set(), OUT_W, 0, OUT_H, clerk) == "right-upper"  # 한 명만 피하면 오른쪽 위
+    both = _pick_zone(set(), OUT_W, 0, OUT_H, [clerk, hero])
+    assert both not in UPPER, f"위쪽이 둘 다 막혔는데 그 자리를 골랐습니다: {both}"
+    for box in (clerk, hero):
+        assert not overlaps(_to_art_ratio(_zone_box(both, OUT_W, 0, OUT_H), OUT_W, 0, OUT_H), box, 0.04)
 
     # 검출 실패 시 가정값(상단 절반)이 들어와도 위쪽 자리를 쓸 수 있어야 한다.
     # 추측 때문에 시선 흐름을 깨면 안 된다 — 느슨한 tolerance 를 주는 이유.

@@ -124,6 +124,8 @@ projects/<제목>/
 [#1](https://github.com/yj78615-blip/instacut/issues/1) **다중 화자**는 편의점 원고(`store.txt`)로 검증하며 닫혔다.
 `texts[].speaker` 를 인물 위치와 매칭해 꼬리를 건다 — 점원이 말하면 점원에게 간다.
 
+화면 구성 — 카메라 그리드, 샷 사이즈, 인물 배치를 프롬프트로 지시하는 방법은 [COMPOSITION.md](COMPOSITION.md) 에 정리했다. 요약하면 **구도 어휘는 모델에 따라 갈린다** — 촬영 용어는 어디서나 통하고, 영역 지정은 Nano Banana 에서만 통한다.
+
 이미 부딪혀서 기록해둔 문제들은 [ISSUES.md](ISSUES.md) 에 있다 — VRAM 한계, 프롬프트로 구도가 안 잡히는 것, 인물 검출 6종이 왜 실패했는지 등.
 
 ## 자체 검사

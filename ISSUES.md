@@ -34,7 +34,11 @@ d_drive:
 
 ## 생성 품질
 
-### 프롬프트로는 구도가 제어되지 않는다
+### 프롬프트로는 구도가 제어되지 않는다 (SDXL 한정)
+
+**이 절은 로컬 SDXL 백엔드에 대한 것이다.** Nano Banana 에서는 같은 지시가 작동한다 —
+편의점 4컷에서 `subject positioned on the right side of the frame, upper left quadrant
+completely empty` 가 그대로 지켜졌다. 자세한 근거와 원인은 [COMPOSITION.md](COMPOSITION.md) 참고.
 
 여러 번 시도해서 확인한 결과다.
 
