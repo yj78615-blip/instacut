@@ -55,9 +55,8 @@ PEOPLE_PROMPT = (
     '사람이 없으면 {{"people": []}}'
 )
 
-# 목표는 4:5(0.8)지만 지원 값 중에는 3:4(0.75)가 가장 가깝다.
-# 남는 차이는 compose.fit_to_canvas 가 좌우를 잘라 흡수한다.
-DEFAULT_ASPECT = "3:4"
+# 캔버스가 1080x1080 정사각이므로 생성도 1:1 — 잘리는 부분이 없다.
+DEFAULT_ASPECT = "1:1"
 
 ENV_KEY = "GOOGLE_API_KEY"
 
@@ -280,7 +279,7 @@ def _demo() -> None:
     req = build_request("숲을 걷는 사람", None)
     assert req["model"] == DEFAULT_MODEL
     assert len(req["input"]) == 1 and req["input"][0]["type"] == "text"
-    assert req["response_format"]["aspect_ratio"] == "3:4"
+    assert req["response_format"]["aspect_ratio"] == "1:1"  # 캔버스가 정사각이라 크롭이 없다
     # 응답 mime 은 jpeg 여야 한다 — png 로 요청하면 API 가 400 을 낸다
     assert req["response_format"]["mime_type"] == "image/jpeg"
 

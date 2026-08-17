@@ -286,7 +286,7 @@ def build_project(data: dict, title: str, source_text: str, seed_base: int | Non
             "art_style_en": style["art_style_en"],
             "character_ko": style["character_ko"],
             "character_en": style["character_en"],
-            "aspect_ratio": "4:5",  # 최종 캔버스. 그림 자체는 1080x1080 정사각 고정
+            "aspect_ratio": "1:1",  # 캔버스도 그림도 1080x1080 정사각 고정
         },
         "caption": "",
         "hashtags": [],

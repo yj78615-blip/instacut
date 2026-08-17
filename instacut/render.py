@@ -27,9 +27,9 @@ FRAGMENT_POSE = "sdxl_pose_t2i"
 # 위치 제어를 잃는 대신 캐릭터 스타일을 지킨다.
 FRAGMENT_CHAR = "sdxl_charonly_t2i"
 CHAR_REF = "character_ref.png"
-# 그림이 캔버스(1080x1350, 4:5) 전체를 채우므로 생성도 세로로 뽑는다.
-# SDXL 버킷 중 4:5 에 가장 가까운 것 — 크롭 손실이 거의 없다.
-GEN_W, GEN_H = 896, 1152
+# 그림이 캔버스(1080x1080) 전체를 채우므로 생성도 정사각으로 뽑는다.
+# SDXL 의 기본 버킷이라 크롭 손실이 0 이다.
+GEN_W, GEN_H = 1024, 1024
 
 
 def _comfy_bin() -> str:

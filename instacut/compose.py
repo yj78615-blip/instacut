@@ -26,8 +26,8 @@ TOLERANCE = {
 FONT_PATH = r"C:\Windows\Fonts\malgun.ttf"
 FONT_BOLD = r"C:\Windows\Fonts\malgunbd.ttf"
 
-# 인스타 4:5 캐러셀 규격
-OUT_W, OUT_H = 1080, 1350
+# 인스타 캐러셀 규격 — 1080x1080 정사각 (기획 고정값)
+OUT_W, OUT_H = 1080, 1080
 
 # 말풍선 후보 자리 (x, y, 폭) — 이미지 크기 대비 비율.
 #
@@ -65,8 +65,8 @@ ZONE_PRIORITY = ["left-upper", "right-upper", "left-lower", "right-lower"]
 # 그림이 캔버스 전체를 채운다. 흰 띠는 없다.
 #
 # 예전에는 나레이션을 그림 밖 띠로 뺐다 — 인물이 프레임을 꽉 채워서 안에 놓을 자리가 없었기 때문이다.
-# 이제 ControlNet 이 자리를 비워주므로 (render.planned_zones → pose.place_subject)
-# 나레이션도 그림 위에 얹을 수 있고, 흰 여백을 만들 이유가 없어졌다.
+# 이제 자리 예약이 작동하므로 나레이션도 그림 위에 얹을 수 있고, 흰 여백을 만들 이유가 없어졌다.
+# 그림도 1080x1080 이 된다 — 기획의 "그림 크기 1080x1080 고정" 과 여기서 일치한다.
 ART_W, ART_H = OUT_W, OUT_H
 
 # 나레이션이 차지하는 상단 가로 영역 (x0, y0, x1, y1) — 인물이 피해야 할 자리
@@ -591,7 +591,8 @@ def _demo() -> None:
     _, _, small = _fit_text(draw, "아주 긴 대사입니다 " * 6, 400, 300)
     assert small < big, (big, small)
 
-    # 규격 변환: 어떤 입력 비율이든 정확히 1080x1350
+    # 규격 변환: 어떤 입력 비율이든 정확히 1080x1080
+    assert (OUT_W, OUT_H) == (1080, 1080), "기획 고정값이다 — 바꾸려면 사용자에게 확인할 것"
     for size in ((896, 1152), (1024, 1024), (1600, 900)):
         assert fit_to_canvas(Image.new("RGB", size, "gray")).size == (OUT_W, OUT_H)
 
