@@ -25,13 +25,34 @@ DEFAULT_MODEL = "gemini-3.1-flash-image"
 # 이미지를 "읽는" 용도 — 생성보다 훨씬 싸다
 VISION_MODEL = "gemini-3.7-flash"
 
+# 좌표는 배열이 아니라 **이름 붙은 필드**로 받는다.
+# `[x0, y0, x1, y1]` 로 받던 시절, 모델이 자기 관례인 [y, x, y, x] 순서로 답해
+# 말풍선 꼬리가 엉뚱한 곳을 가리켰다. 순서는 지킬 의무가 없는 약속이지만
+# 필드 이름은 뒤바뀔 수가 없다.
+_COORD_RULE = (
+    "출력은 JSON 한 줄만. 좌표는 0~1 비율이고 필드 이름을 반드시 지켜라:\n"
+    "  x = 왼쪽 끝 0.0 → 오른쪽 끝 1.0\n"
+    "  y = 위쪽 끝 0.0 → 아래쪽 끝 1.0\n"
+)
+
 LOCATE_PROMPT = (
     "이 만화 컷에서 **주인공 캐릭터 한 명**이 차지하는 영역을 알려줘.\n"
     "머리 끝부터 발끝까지, 몸 전체를 감싸는 사각형이다.\n"
     "배경의 나무나 다른 사람은 포함하지 마라.\n\n"
-    "출력은 JSON 한 줄만. 값은 0~1 비율 (왼쪽 위가 0,0):\n"
-    '{"box": [x0, y0, x1, y1]}\n'
+    + _COORD_RULE
+    + '{"box": {"x0": 0.30, "y0": 0.12, "x1": 0.60, "y1": 0.90}}\n'
     '캐릭터가 없으면 {"box": null}'
+)
+
+PEOPLE_PROMPT = (
+    "이 만화 컷에 있는 **사람(캐릭터)마다** 위치를 알려줘.\n"
+    "각각 머리 끝부터 발끝까지 몸 전체를 감싸는 사각형이다.\n"
+    "배경의 흐릿한 군중은 빼고, 장면에 의미 있게 등장하는 인물만.\n\n"
+    "역할 후보: {roles}\n"
+    "각 인물이 이 중 누구인지 label 에 적어라. 확실하지 않으면 가장 그럴듯한 것을 고른다.\n\n"
+    + _COORD_RULE  # 중괄호가 없어 .format 에 안전하다
+    + '{{"people": [{{"label": "주인공", "x0": 0.30, "y0": 0.12, "x1": 0.60, "y1": 0.90}}]}}\n'
+    '사람이 없으면 {{"people": []}}'
 )
 
 # 목표는 4:5(0.8)지만 지원 값 중에는 3:4(0.75)가 가장 가깝다.
@@ -156,37 +177,77 @@ def extract_text(response: dict) -> str:
     return "\n".join(out)
 
 
-def parse_box(text: str) -> tuple[float, float, float, float] | None:
-    """응답 텍스트에서 {"box": [...]} 를 꺼낸다. 코드펜스나 설명이 붙어도 견딘다."""
-    m = re.search(r"\{[^{}]*\"box\"[^{}]*\}", text, re.S)
-    if not m:
+def _box_of(node) -> tuple[float, float, float, float] | None:
+    """x0/y0/x1/y1 필드에서 상자를 꺼낸다. 예전 [x0,y0,x1,y1] 배열도 받아준다."""
+    if isinstance(node, dict) and "box" in node and not {"x0", "y0"} <= node.keys():
+        node = node["box"]
+    if isinstance(node, dict):
+        try:
+            vals = [float(node[k]) for k in ("x0", "y0", "x1", "y1")]
+        except (KeyError, TypeError, ValueError):
+            return None
+    elif isinstance(node, (list, tuple)) and len(node) == 4:
+        try:
+            vals = [float(v) for v in node]
+        except (TypeError, ValueError):
+            return None
+    else:
         return None
-    try:
-        box = json.loads(m.group(0)).get("box")
-    except json.JSONDecodeError:
-        return None
-    if not box or len(box) != 4:
-        return None
-    x0, y0, x1, y1 = (max(0.0, min(1.0, float(v))) for v in box)
+
+    x0, y0, x1, y1 = (max(0.0, min(1.0, v)) for v in vals)
     if x1 <= x0 or y1 <= y0:
         return None
     return (x0, y0, x1, y1)
 
 
-def locate_subject(img, model: str = VISION_MODEL, timeout: int = 120) -> tuple | None:
-    """그림을 보여주고 주인공이 차지하는 영역을 좌표로 받는다.
+def parse_box(text: str) -> tuple[float, float, float, float] | None:
+    """응답 텍스트에서 주인공 상자를 꺼낸다. 코드펜스나 설명이 붙어도 견딘다."""
+    m = re.search(r"\{.*\"box\".*\}", text, re.S)
+    if not m:
+        return None
+    try:
+        return _box_of(json.loads(m.group(0)))
+    except json.JSONDecodeError:
+        return None
 
-    로컬 검출(엣지·Haar·밝기·YOLO·원·윤곽)이 전부 실패해서 만들었다 —
-    양식화된 캐릭터에는 픽셀 단서가 없지만, 그림을 이해하는 모델은 그냥 본다.
-    배경 인물과 주인공도 구분한다.
+
+def parse_people(text: str) -> dict[str, tuple]:
+    """응답에서 {"people": [{"label", "x0"...}]} 를 꺼내 라벨→상자 로 만든다."""
+    m = re.search(r"\{.*\"people\".*\}", text, re.S)
+    if not m:
+        return {}
+    try:
+        people = json.loads(m.group(0)).get("people") or []
+    except json.JSONDecodeError:
+        return {}
+
+    out: dict[str, tuple] = {}
+    for p in people:
+        label = (p.get("label") or "").strip()
+        box = _box_of(p)
+        if label and box and label not in out:
+            out[label] = box
+    return out
+
+
+def locate_people(img, roles: list[str], model: str = VISION_MODEL, timeout: int = 120) -> dict[str, tuple]:
+    """컷에 있는 인물들의 위치를 역할 이름과 함께 받는다.
+
+    말풍선 꼬리를 **말하는 사람**에게 걸기 위한 것이다. 시나리오가 화자를 알려주니
+    (`texts[].speaker`) 그 이름을 후보로 주고 매칭시킨다.
     """
+    prompt = PEOPLE_PROMPT.format(roles=", ".join(roles) if roles else "주인공")
+    return parse_people(extract_text(_ask(img, prompt, model, timeout)))
+
+
+def _ask(img, prompt: str, model: str, timeout: int) -> dict:
+    """이미지 한 장과 프롬프트를 보내고 응답 JSON 을 받는다."""
     buf = io.BytesIO()
     img.save(buf, format="PNG")
-
     body = {
         "model": model,
         "input": [
-            {"type": "text", "text": LOCATE_PROMPT},
+            {"type": "text", "text": prompt},
             {"type": "image", "mime_type": "image/png", "data": base64.b64encode(buf.getvalue()).decode("ascii")},
         ],
     }
@@ -198,9 +259,19 @@ def locate_subject(img, model: str = VISION_MODEL, timeout: int = 120) -> tuple 
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as resp:
-            return parse_box(extract_text(json.loads(resp.read().decode("utf-8"))))
+            return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
-        raise RuntimeError(f"좌표 질의 실패 (HTTP {e.code}): {e.read().decode('utf-8', 'replace')[:300]}") from None
+        raise RuntimeError(f"질의 실패 (HTTP {e.code}): {e.read().decode('utf-8', 'replace')[:300]}") from None
+
+
+def locate_subject(img, model: str = VISION_MODEL, timeout: int = 120) -> tuple | None:
+    """그림을 보여주고 주인공이 차지하는 영역을 좌표로 받는다.
+
+    로컬 검출(엣지·Haar·밝기·YOLO·원·윤곽)이 전부 실패해서 만들었다 —
+    양식화된 캐릭터에는 픽셀 단서가 없지만, 그림을 이해하는 모델은 그냥 본다.
+    배경 인물과 주인공도 구분한다.
+    """
+    return parse_box(extract_text(_ask(img, LOCATE_PROMPT, model, timeout)))
 
 
 def _demo() -> None:
@@ -234,6 +305,24 @@ def _demo() -> None:
     }
     assert extract_image(real).startswith(b"\x89PNG"), "추론 signature 를 이미지로 착각했습니다"
 
+    # 좌표 — 이름 붙은 필드가 정답. 배열 순서를 믿었다가 [y,x,y,x] 로 와서 꼬리가 틀어졌었다
+    named = '설명 어쩌고\n{"box": {"x0": 0.3, "y0": 0.1, "x1": 0.6, "y1": 0.9}}'
+    assert parse_box(named) == (0.3, 0.1, 0.6, 0.9)
+    assert parse_box('{"box": [0.3, 0.1, 0.6, 0.9]}') == (0.3, 0.1, 0.6, 0.9)  # 예전 형식
+    assert parse_box('{"box": null}') is None
+    assert parse_box('{"box": {"x0": 0.6, "y0": 0.1, "x1": 0.3, "y1": 0.9}}') is None  # 뒤집힌 상자
+
+    two = (
+        '{"people": ['
+        '{"label": "점원", "x0": 0.13, "y0": 0.37, "x1": 0.28, "y1": 0.68},'
+        '{"label": "주인공", "x0": 0.42, "y0": 0.36, "x1": 0.63, "y1": 0.67}]}'
+    )
+    got = parse_people(two)
+    assert set(got) == {"점원", "주인공"}
+    # 점원은 왼쪽, 주인공은 오른쪽 — 축이 뒤바뀌면 이 비교가 깨진다
+    assert got["점원"][0] < got["주인공"][0], "x/y 축이 뒤바뀌었습니다"
+    assert parse_people('{"people": []}') == {}
+
     # 못 찾으면 조용히 빈 값을 주지 말고 실패해야 한다
     try:
         extract_image({"status": "ok", "steps": [{"type": "thought", "signature": "E" * 5000}]})
@@ -250,6 +339,17 @@ def _demo() -> None:
     assert parse_box('{"box": [0.5, 0.5, 0.2, 0.9]}') is None  # 뒤집힌 상자는 버린다
     # 범위를 벗어난 값은 잘라낸다
     assert parse_box('{"box": [-0.3, 0.1, 1.4, 0.9]}') == (0.0, 0.1, 1.0, 0.9)
+
+    # 인물별 위치 — 화자와 매칭하려면 라벨이 함께 와야 한다
+    multi = parse_people('{"people": [{"label":"주인공","box":[0.1,0.2,0.3,0.9]},'
+                         '{"label":"점원","box":[0.6,0.2,0.8,0.9]}]}')
+    assert set(multi) == {"주인공", "점원"}, multi
+    assert multi["점원"][0] == 0.6
+    assert parse_people('{"people": []}') == {}
+    assert parse_people("사람이 없습니다") == {}
+    # 상자가 망가진 항목은 버리고 나머지는 살린다
+    partial = parse_people('{"people":[{"label":"A","box":[0.5,0.5,0.2,0.9]},{"label":"B","box":[0,0,1,1]}]}')
+    assert set(partial) == {"B"}, partial
 
     # 텍스트 추출 — 추론 단계는 답이 아니다
     resp = {

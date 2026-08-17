@@ -6,6 +6,8 @@ raw/ 는 절대 덮어쓰지 않는다. 텍스트를 몇 번 고쳐도 그림은
 
 from __future__ import annotations
 
+import math
+import os
 import re
 from pathlib import Path
 
@@ -96,6 +98,7 @@ OVERLAP_ELLIPSE = 0.22  # 조각 높이 대비 비율
 TAIL_DOTS = (0.34, 0.56, 0.76, 0.93)  # 말풍선 → 인물 얼굴 사이의 상대 위치
 TAIL_SIZES = (10, 8, 6, 5)  # 인물에 가까울수록 작아진다
 TAIL_REACH = 1.0  # 얼굴까지
+TAIL_INSET = 14.0  # 꼬리 뿌리를 말풍선 안쪽으로 넣는 깊이 (테두리를 덮어 이어 보이게)
 
 
 def fit_to_canvas(img: Image.Image, w: int = OUT_W, h: int = OUT_H) -> Image.Image:
@@ -243,6 +246,66 @@ def _narration(draw, texts: list[str], w: int, h: int) -> None:
     _draw_lines(draw, lines, font, size, x0 + PAD, y0 + PAD * 0.55)
 
 
+# 꼬리 뿌리가 타원에서 차지하는 각도(라디안).
+# 넓히면 뭉툭한 뿔이 되어 만화 말풍선처럼 보이지 않는다 — 좁고 뾰족해야 한다.
+TAIL_ROOT_ANGLE = 0.08
+
+
+def _balloon_outline(box, tip=None, root_half: float = TAIL_ROOT_ANGLE) -> list[tuple[float, float]]:
+    """말풍선 외곽선을 점 목록으로. 꼬리가 있으면 그 구간을 꼬리로 대체한다.
+
+    타원과 꼬리를 따로 그리면 꼬리의 검은 변이 타원 안쪽까지 들어가 삐져나온다.
+    **하나의 닫힌 경로**로 만들어야 외곽선이 자연스럽게 이어진다 — 만화에서 그리는 방식이다.
+    """
+    x0, y0, x1, y1 = box
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    rx, ry = (x1 - x0) / 2, (y1 - y0) / 2
+
+    if tip is None:
+        steps = 96
+        return [
+            (cx + rx * math.cos(2 * math.pi * i / steps), cy + ry * math.sin(2 * math.pi * i / steps))
+            for i in range(steps)
+        ]
+
+    # 꼬리가 나갈 방향의 각도를 비우고 그 자리에 tip 을 꽂는다
+    ang = math.atan2((tip[1] - cy) / max(ry, 1e-6), (tip[0] - cx) / max(rx, 1e-6))
+    steps = 88
+    span = 2 * math.pi - 2 * root_half
+    pts = [
+        (cx + rx * math.cos(a), cy + ry * math.sin(a))
+        for a in (ang + root_half + span * i / steps for i in range(steps + 1))
+    ]
+    pts.append(tip)
+    return pts
+
+
+def _draw_smooth(img, pts, line_width: int = 3, scale: int = 4) -> None:
+    """닫힌 도형을 4배로 그려 줄인다.
+
+    Pillow 에는 안티앨리어싱이 없어 곡선과 대각선이 계단처럼 거칠다.
+    """
+    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+    pad = line_width * 2 + 6
+    ox, oy = int(min(xs)) - pad, int(min(ys)) - pad
+    w, h = int(max(xs)) - ox + pad, int(max(ys)) - oy + pad
+    if w <= 0 or h <= 0:
+        return
+
+    big = Image.new("RGBA", (w * scale, h * scale), (255, 255, 255, 0))
+    d = ImageDraw.Draw(big)
+    local = [((px - ox) * scale, (py - oy) * scale) for px, py in pts]
+    d.polygon(local, fill=(255, 255, 255, 255))
+    # joint="curve" 만으로는 꼬리 끝처럼 각이 예리한 곳에서 선이 벌어져 보인다.
+    # 꼭짓점마다 선 두께만 한 원을 찍어 이음매를 메운다.
+    lw = line_width * scale
+    d.line(local + [local[0]], fill=(0, 0, 0, 255), width=lw, joint="curve")
+    r = lw / 2
+    for px, py in local:
+        d.ellipse([px - r, py - r, px + r, py + r], fill=(0, 0, 0, 255))
+    img.alpha_composite(big.resize((w, h), Image.LANCZOS), (ox, oy))
+
+
 def _edge_point(box, target, ellipse: bool) -> tuple[float, float]:
     """말풍선 중심에서 target 방향으로 나아가다 테두리와 만나는 점.
 
@@ -286,8 +349,10 @@ def _balloon(
     if zone in UPPER:
         zy += shift
     box_w = w * zw
-    # 타원은 안쪽 가용 폭이 사각형보다 좁다. 텍스트를 먼저 좁게 잡아야 밖으로 새지 않는다
-    text_limit = (box_w - PAD * 2) * (0.68 if thought else 1.0)
+    # 말풍선은 기본적으로 둥근 형태다. 대사와 생각은 모양이 아니라 **꼬리**로 구분한다
+    # (대사는 뾰족한 삼각형, 생각은 점 세 개) — 만화 관행이기도 하다.
+    # 타원은 안쪽 가용 폭이 사각형보다 좁으므로 텍스트를 먼저 좁게 잡아야 밖으로 새지 않는다
+    text_limit = (box_w - PAD * 2) * 0.68
     font, _, size = _fit_text(draw, text, text_limit, art_h * 0.44, bold=True)
 
     # 폰트는 전체 기준으로 한 번 정하고, 줄바꿈은 문장별로 따로 한다.
@@ -299,13 +364,12 @@ def _balloon(
     for g in groups:
         tw = max(draw.textlength(ln, font=font) for ln in g)
         th = len(g) * size * LINE_GAP
-        bw, bh = tw + PAD * 2, th + PAD * 1.4
-        if thought:  # 텍스트 박스를 감싸는 타원은 더 커야 한다
-            bw, bh = bw * 1.45, bh * 1.55
+        # 텍스트 박스를 감싸는 타원은 사각형보다 커야 한다
+        bw, bh = (tw + PAD * 2) * 1.45, (th + PAD * 1.4) * 1.55
         boxes.append((bw, bh, tw, th))
 
     def _overlap(bh: float) -> float:
-        return bh * OVERLAP_ELLIPSE if thought else OVERLAP_RECT
+        return bh * OVERLAP_ELLIPSE  # 타원은 위아래 끝이 좁아 많이 겹쳐야 이어 보인다
 
     total_h = sum(b[1] for b in boxes) - sum(_overlap(b[1]) for b in boxes[:-1])
     max_bw = max(b[0] for b in boxes)
@@ -326,6 +390,9 @@ def _balloon(
 
     # 꼬리가 위로 가면 첫 조각에, 옆/아래로 가면 마지막 조각에 붙인다
     tail_idx = 0 if tail_up else len(boxes) - 1
+    # 도형을 모아 한 번에 그린다 — 텍스트는 도형 위에 올라가야 한다
+    shapes: list[list[tuple[float, float]]] = []
+    texts_to_draw: list[tuple[list[str], float, float, float]] = []
 
     for i, (g, (bw, bh, tw, th)) in enumerate(zip(groups, boxes)):
         last = i == tail_idx
@@ -333,35 +400,47 @@ def _balloon(
         x0 = x_left + (max_bw - bw) / 2
         x1, y1 = x0 + bw, y + bh
 
-        if thought:
-            draw.ellipse([x0, y, x1, y1], fill="white", outline="black", width=3)
-            if last:  # 꼬리 점은 한 조각에만 — 말풍선에서 인물까지 이어 놓는다
-                sx, sy = _edge_point((x0, y, x1, y1), target, ellipse=True)
-                dx, dy = target[0] - sx, target[1] - sy
-                for frac, r in zip(TAIL_DOTS, TAIL_SIZES):
-                    step = frac * TAIL_REACH
-                    cx, cy = sx + dx * step, sy + dy * step
-                    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill="white", outline="black", width=2)
-            tx, ty, cw = x0 + (bw - tw) / 2, y + (bh - th) / 2, tw
-        else:
-            draw.rounded_rectangle([x0, y, x1, y1], radius=22, fill="white", outline="black", width=3)
-            if last:  # 꼬리를 인물 쪽으로 겨눈다
-                sx, sy = _edge_point((x0, y, x1, y1), target, ellipse=False)
-                dx, dy = target[0] - sx, target[1] - sy
-                dist = max(1.0, (dx * dx + dy * dy) ** 0.5)
-                ux, uy = dx / dist, dy / dist
-                # 대사 꼬리는 삼각형이라 인물까지 잇지 않는다 — 방향만 가리키면 읽힌다
-                tip_len = max(38.0, min(70.0, dist * 0.5))
-                tip = (sx + ux * tip_len, sy + uy * tip_len)
-                # 뿌리는 진행 방향에 수직으로 벌린다
-                px, py = -uy * 22, ux * 22
-                pts = [(sx + px, sy + py), (sx - px, sy - py), tip]
-                draw.polygon(pts, fill="white", outline="black")
-                draw.line([pts[0], tip, pts[1]], fill="black", width=3)
-            tx, ty, cw = x0 + PAD, y + PAD * 0.7, bw - PAD * 2
+        # 모양은 둘 다 타원. 대사와 생각은 꼬리로 구분한다.
+        # 대사 꼬리는 외곽선을 공유해야 삐져나오지 않으므로 도형에 포함해 그린다.
+        tip = None
+        if last and not thought:
+            ex, ey = _edge_point((x0, y, x1, y1), target, ellipse=True)
+            dx, dy = target[0] - ex, target[1] - ey
+            dist = max(1.0, (dx * dx + dy * dy) ** 0.5)
+            # 짧게 유지한다 — 방향만 가리키면 되고, 길면 화면을 가로질러 어수선해진다
+            tip_len = max(20.0, min(38.0, dist * 0.4))
+            tip = (ex + dx / dist * tip_len, ey + dy / dist * tip_len)
 
-        _draw_lines(draw, g, font, size, tx, ty, center_w=cw)  # 말풍선 안 텍스트는 가운데 정렬
+        shapes.append(_balloon_outline((x0, y, x1, y1), tip))
+
+        if last and thought:  # 생각 — 점 세 개가 인물까지 이어진다
+            ex, ey = _edge_point((x0, y, x1, y1), target, ellipse=True)
+            dx, dy = target[0] - ex, target[1] - ey
+            for frac, r in zip(TAIL_DOTS, TAIL_SIZES):
+                step = frac * TAIL_REACH
+                cx, cy = ex + dx * step, ey + dy * step
+                shapes.append(_balloon_outline((cx - r, cy - r, cx + r, cy + r)))
+
+        texts_to_draw.append((g, x0 + (bw - tw) / 2, y + (bh - th) / 2, tw))
         y += bh - _overlap(bh)
+
+    return shapes, texts_to_draw, font, size
+
+
+def _locate_speakers(img, roles: set[str]) -> dict[str, tuple]:
+    """화자가 둘 이상인 컷에서만 인물별 위치를 묻는다. 실패하면 빈 dict."""
+    try:
+        from . import gemini
+
+        if not os.environ.get(gemini.ENV_KEY):
+            return {}
+        found = gemini.locate_people(img, sorted(roles))
+        if found:
+            print(f"     화자 위치: {', '.join(found)}")
+        return found
+    except Exception as e:  # 네트워크·쿼터·형식 — 없으면 주인공에게 건다
+        print(f"     화자 위치 질의 실패 ({type(e).__name__}) — 주인공 기준으로 답니다")
+        return {}
 
 
 def compose_cut(
@@ -381,8 +460,9 @@ def compose_cut(
         t for t in texts if t.get("type") != "narration" and (t.get("content") or "").strip()
     ]
 
-    # 그림이 캔버스 전체를 채운다 — 흰 띠 없음
-    img = fit_to_canvas(src, ART_W, ART_H)
+    # 그림이 캔버스 전체를 채운다 — 흰 띠 없음.
+    # RGBA 로 두는 이유: 꼬리를 4배로 그려 부드럽게 얹을 때 alpha 합성이 필요하다
+    img = fit_to_canvas(src, ART_W, ART_H).convert("RGBA")
 
     # 인물 위치를 먼저 알아야 자리를 고를 수 있다 (P-7)
     source = "saved" if head is not None else ""
@@ -410,6 +490,15 @@ def compose_cut(
     # 저장된 값(saved)은 사용자가 고쳤을 수 있으므로 가장 정확한 것으로 취급한다.
     tolerance = TOLERANCE.get(source, TOLERANCE["gemini"])
 
+    # 화자가 여럿이면 각자에게 꼬리를 건다. 시나리오가 화자를 알려주므로(speaker)
+    # 그림에서 누가 말하는지 추측할 필요가 없다.
+    speakers = {(t.get("speaker") or "").strip() for t in balloons}
+    speakers.discard("")
+    # 주인공 혼자 말하는 컷은 이미 상자를 알고 있으니 물을 필요가 없다.
+    # 화자가 하나여도 그게 주인공이 아니면 물어야 한다 — 안 그러면 점원이 말하는데
+    # 꼬리가 주인공을 겨눈다.
+    people = _locate_speakers(img, speakers) if speakers - {"주인공"} else {}
+
     used: set[str] = set()
     prev_zone: str | None = None
     for t in balloons:
@@ -421,13 +510,21 @@ def compose_cut(
         if zone is None:  # 얼굴을 피할 자리가 없다 — 가장 덜 겹치는 자리에 놓는다
             zone = next((z for z in ZONE_PRIORITY if z not in used), ZONE_PRIORITY[-1])
         used.add(zone)
-        _balloon(
-            draw, t["content"].strip(), zone, ART_W, 0, ART_H, t.get("type") == "thought", shift, head_used
+        # 이 대사의 화자가 어디 있는지 알면 그쪽으로, 모르면 주인공에게
+        speaker_box = people.get((t.get("speaker") or "").strip(), head_used)
+        shapes, texts_to_draw, font, size = _balloon(
+            draw, t["content"].strip(), zone, ART_W, 0, ART_H, t.get("type") == "thought", shift, speaker_box
         )
+        # 도형을 먼저 부드럽게 얹고, 텍스트를 그 위에 쓴다
+        for pts in shapes:
+            _draw_smooth(img, pts)
+        draw = ImageDraw.Draw(img, "RGBA")  # alpha_composite 뒤에는 다시 잡아야 한다
+        for lines, tx, ty, cw in texts_to_draw:
+            _draw_lines(draw, lines, font, size, tx, ty, center_w=cw)
         prev_zone = zone
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    img.save(out_path, "PNG")
+    img.convert("RGB").save(out_path, "PNG")
     return out_path, head, source
 
 
@@ -561,6 +658,10 @@ def _demo() -> None:
     assert TAIL_DOTS[-1] * TAIL_REACH <= 1.0, "꼬리가 인물을 지나칩니다"
     # 첫 점이 말풍선에 붙어 있으면 그 사이 배경에 걸린다 — 인물 쪽에 몰아야 한다
     assert TAIL_DOTS[0] > 0.25, f"첫 점이 말풍선에 너무 가깝습니다: {TAIL_DOTS[0]}"
+
+    # 대사 꼬리 뿌리는 말풍선 안쪽에서 시작해야 테두리를 덮어 한 덩어리로 보인다.
+    # 테두리(width 3) 를 확실히 덮으려면 그보다 충분히 깊어야 한다.
+    assert TAIL_INSET > 8, f"뿌리가 얕아 테두리가 드러납니다: {TAIL_INSET}"
 
     # 아래쪽 자리는 화면 중간보다 확실히 아래여야 한다 (그래야 꼬리가 위로 붙는다)
     assert ZONES[LOWER[0]][1] + ZONE_H / 2 > 0.5, "아래 자리가 중간보다 위에 있습니다"

@@ -41,6 +41,15 @@ RESERVE_MANY = (
     "upper half and both side margins empty, plain simple background"
 )
 
+# 화자가 둘 이상인 컷 — 대화하는 인물들을 화면 가운데로 모은다.
+# 한쪽에 몰리면 반대쪽이 텅 비고, 말풍선(위/아래)과 인물 사이도 멀어진다.
+RESERVE_DIALOGUE = (
+    "the two characters face each other in the middle of the frame, "
+    "both centered horizontally and vertically, close together, "
+    "upper area and lower area empty with plain simple background, "
+    "no large empty space on either side"
+)
+
 # 인물이 프레임을 꽉 채우면 말풍선 놓을 자리가 없다. 전 컷에 공통으로 주입해 구도를 넓힌다.
 # 합성 단계에서 그림을 축소하는 방법도 있지만, 그러면 주변에 채울 배경이 없어 흰 여백이 생긴다.
 SUBJECT_SCALE = (
@@ -180,7 +189,12 @@ def _ask_claude(prompt: str, timeout: int = 300) -> str:
         timeout=timeout,
     )
     if proc.returncode != 0:
-        raise RuntimeError(f"claude 호출 실패 (exit {proc.returncode}):\n{proc.stderr}")
+        # 인증 만료 같은 메시지는 stdout 으로 나온다 — stderr 만 보면 빈 에러가 찍힌다
+        detail = (proc.stderr or "").strip() or (proc.stdout or "").strip() or "(출력 없음)"
+        hint = ""
+        if "authenticate" in detail.lower() or "oauth" in detail.lower():
+            hint = "\n→ 터미널에서 `claude` 를 한 번 실행해 로그인하세요."
+        raise RuntimeError(f"claude 호출 실패 (exit {proc.returncode}): {detail[:400]}{hint}")
     return proc.stdout
 
 
@@ -281,13 +295,17 @@ def build_project(data: dict, title: str, source_text: str, seed_base: int | Non
 
 
 def reserve_hint(cut: dict) -> str:
-    """이 컷에 말풍선이 몇 개 들어가는지 보고, 그 자리를 비우라는 지시를 만든다."""
-    n = sum(
-        1
-        for t in cut.get("texts", [])
-        if t.get("type") != "narration" and (t.get("content") or "").strip()
-    )
-    return RESERVE.get(n, RESERVE_MANY)
+    """말풍선이 몇 개 들어가는지, 화자가 몇 명인지 보고 구도 지시를 만든다."""
+    balloons = [
+        t for t in cut.get("texts", []) if t.get("type") != "narration" and (t.get("content") or "").strip()
+    ]
+    speakers = {(t.get("speaker") or "").strip() for t in balloons}
+    speakers.discard("")
+
+    # 대화 컷은 인물 배치가 다르다 — 마주 보고 가운데 모여야 한다
+    if len(speakers) > 1:
+        return RESERVE_DIALOGUE
+    return RESERVE.get(len(balloons), RESERVE_MANY)
 
 
 def assemble_prompt(project: dict, cut: dict) -> str:
@@ -375,6 +393,28 @@ def _demo() -> None:
     assert "upper left quadrant completely empty" in one
     assert "upper left quadrant and lower right quadrant" in two, two
     assert one != two  # 개수가 다르면 비울 자리도 달라야 한다
+
+    # 화자가 둘이면 대화 구도 — 인물들을 가운데로 모은다
+    talk = reserve_hint(
+        {
+            "texts": [
+                {"type": "dialogue", "content": "봉투 필요하세요?", "speaker": "점원"},
+                {"type": "dialogue", "content": "아니요.", "speaker": "주인공"},
+            ]
+        }
+    )
+    assert "face each other in the middle" in talk, talk
+    assert talk != two, "화자가 둘인데 단일 인물 구도를 씁니다"
+    # 같은 사람이 두 번 말하면 대화가 아니다
+    solo_twice = reserve_hint(
+        {
+            "texts": [
+                {"type": "dialogue", "content": "가야지.", "speaker": "주인공"},
+                {"type": "thought", "content": "늦었네.", "speaker": "주인공"},
+            ]
+        }
+    )
+    assert solo_twice == two, "화자가 한 명인데 대화 구도를 씁니다"
 
     # 대사 1개짜리 컷의 프롬프트에는 왼쪽 위를 비우라는 지시가 실제로 들어간다
     cut_one = dict(project["cuts"][0], texts=[{"type": "dialogue", "content": "대사"}])
