@@ -92,11 +92,10 @@ OVERLAP_ELLIPSE = 0.22  # 조각 높이 대비 비율
 # 짧게 두면 인물과 말풍선 사이의 배경(나무)에서 끊겨 **그 배경이 생각하는 것처럼** 보인다.
 # 실제로 그렇게 만들었다가 두 번 지적받았다.
 # 큰 점 세 개로 길게 이었을 때는 배경 위에 흩어져 어색했으므로,
-# 작은 점을 촘촘히 놓아 궤적이 보이게 한다 — 말풍선에서 인물로 이어지는 선이 읽힌다.
-# 점을 인물 쪽에 몰아 놓는다. 말풍선 근처에 두면 그 사이의 배경(나무)에 걸려
-# 배경이 생각하는 것처럼 보인다 — 마지막 점이 얼굴에 닿아야 누구인지 분명해진다.
-TAIL_DOTS = (0.34, 0.56, 0.76, 0.93)  # 말풍선 → 인물 얼굴 사이의 상대 위치
-TAIL_SIZES = (10, 8, 6, 5)  # 인물에 가까울수록 작아진다
+# 말풍선 바로 아래에 점 세 개. 인물까지 이어 붙이지 않는다 —
+# 방향만 가리키면 읽히고, 화면을 가로지르면 배경 위에 점이 흩어져 어수선해진다.
+TAIL_DOTS = (0.04, 0.16, 0.27)  # 말풍선 → 인물 사이의 상대 위치. 앞쪽 1/4 에서 끝난다
+TAIL_SIZES = (19, 16, 13)  # 인물 쪽으로 갈수록 작아진다
 TAIL_REACH = 1.0  # 얼굴까지
 TAIL_INSET = 14.0  # 꼬리 뿌리를 말풍선 안쪽으로 넣는 깊이 (테두리를 덮어 이어 보이게)
 
@@ -381,8 +380,10 @@ def _balloon(
     # 인물 위치를 모르면 자리 반대편에 있다고 가정한다.
     if head:
         target = ((head[0] + head[2]) / 2 * w, art_top + (head[1] + (head[3] - head[1]) * 0.3) * art_h)
+        head_px = (head[0] * w, art_top + head[1] * art_h, head[2] * w, art_top + head[3] * art_h)
     else:
         target = (w * (0.25 if zone.startswith("right") else 0.75), art_top + art_h * 0.5)
+        head_px = None
 
     to_left = target[0] < x_left + max_bw / 2  # 인물이 말풍선보다 왼쪽에 있나
     # 말풍선이 인물보다 아래면 꼬리를 위로 붙인다
@@ -413,9 +414,12 @@ def _balloon(
 
         shapes.append(_balloon_outline((x0, y, x1, y1), tip))
 
-        if last and thought:  # 생각 — 점 세 개가 인물까지 이어진다
+        if last and thought:  # 생각 — 점이 인물 앞까지 이어진다
             ex, ey = _edge_point((x0, y, x1, y1), target, ellipse=True)
-            dx, dy = target[0] - ex, target[1] - ey
+            # 인물 상자 경계에서 멈춘다. target 은 상자 **안쪽**(얼굴께)이라
+            # 거기까지 가면 마지막 점이 얼굴 위에 올라가 그림을 가린다.
+            stop = _edge_point(head_px, (ex, ey), ellipse=False) if head_px else target
+            dx, dy = stop[0] - ex, stop[1] - ey
             for frac, r in zip(TAIL_DOTS, TAIL_SIZES):
                 step = frac * TAIL_REACH
                 cx, cy = ex + dx * step, ey + dy * step
@@ -649,15 +653,19 @@ def _demo() -> None:
     diag = _edge_point(box_t, (500.0, 450.0), False)
     assert diag[0] > 200 and diag[1] > 150, diag
 
-    # 생각 꼬리는 인물까지 이어져야 한다 — 중간에서 끊기면 그 자리의 배경이 생각하는 것처럼 보인다
+    # 생각 꼬리 — 말풍선 바로 아래 점 세 개로 방향만 가리킨다
     assert list(TAIL_DOTS) == sorted(TAIL_DOTS), "점이 멀어지는 순서여야 합니다"
     assert len(TAIL_DOTS) == len(TAIL_SIZES)
     assert list(TAIL_SIZES) == sorted(TAIL_SIZES, reverse=True), "인물 쪽으로 갈수록 작아져야 합니다"
-    # 마지막 점이 얼굴 가까이 닿아야 "이 인물이 생각한다"가 읽힌다
-    assert TAIL_DOTS[-1] * TAIL_REACH > 0.85, "꼬리가 인물까지 닿지 않습니다"
-    assert TAIL_DOTS[-1] * TAIL_REACH <= 1.0, "꼬리가 인물을 지나칩니다"
-    # 첫 점이 말풍선에 붙어 있으면 그 사이 배경에 걸린다 — 인물 쪽에 몰아야 한다
-    assert TAIL_DOTS[0] > 0.25, f"첫 점이 말풍선에 너무 가깝습니다: {TAIL_DOTS[0]}"
+    # 말풍선에서 시작해야 어느 말풍선의 꼬리인지 읽힌다
+    assert TAIL_DOTS[0] * TAIL_REACH <= 0.06, f"첫 점이 말풍선에서 떨어져 있습니다: {TAIL_DOTS[0]}"
+    # 인물까지 이어 붙이면 배경 위에 점이 흩어지고 마지막 점이 얼굴을 덮는다
+    assert TAIL_DOTS[-1] * TAIL_REACH <= 0.35, f"꼬리가 인물까지 뻗습니다: {TAIL_DOTS[-1]}"
+    # 점이 벌어지면 세 개가 한 궤적으로 안 읽힌다
+    gaps = [b - a for a, b in zip(TAIL_DOTS, TAIL_DOTS[1:])]
+    assert max(gaps) <= 0.14, f"점 간격이 넓습니다: {max(gaps):.2f}"
+    # 점이 작으면 간격이 좁아도 끊겨 보인다
+    assert min(TAIL_SIZES) >= 6, f"가장 작은 점이 너무 작습니다: {min(TAIL_SIZES)}"
 
     # 대사 꼬리 뿌리는 말풍선 안쪽에서 시작해야 테두리를 덮어 한 덩어리로 보인다.
     # 테두리(width 3) 를 확실히 덮으려면 그보다 충분히 깊어야 한다.
