@@ -117,7 +117,8 @@ projects/<제목>/
 |---|---|---|
 | [#2](https://github.com/yj78615-blip/instacut/issues/2) | 인물 위치 검출을 로컬 VLM(Florence-2)으로 | 지금은 Gemini 질의라 컷당 비용이 든다. 로컬로 옮기면 무료 |
 | [#3](https://github.com/yj78615-blip/instacut/issues/3) | 캐릭터 LoRA 학습 | 8GB 에서 SDXL LoRA 학습이 되는지 미확인. 되면 캐릭터 비용이 초기 한 번으로 끝난다 |
-| [#4](https://github.com/yj78615-blip/instacut/issues/4) | Gemini 좌표 응답을 실제 키로 재확인 | 새 프롬프트(x0/y0/x1/y1)가 실제로 지켜지는지 미검증. 지금 좌표는 손으로 넣은 값이다 |
+| [#4](https://github.com/yj78615-blip/instacut/issues/4) | 화자 라벨 불일치 — 모델이 후보 밖 이름을 반환한다 | 꼬리 방향만 영향받고 회피(P-7)는 정상이라 급하지 않다 |
+| [#5](https://github.com/yj78615-blip/instacut/issues/5) | `render` 재시도 — 이미지 대신 설명 텍스트만 오는 경우 | 재시도하면 대개 바로 성공한다. 한 컷만 다시 돌리면 되니 치명적이지 않다 |
 
 **#2 와 #3 이 둘 다 되면 크레딧 없이 전체 파이프라인이 돈다.**
 
