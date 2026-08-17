@@ -46,9 +46,37 @@ uv run python -m instacut.cli render
 # [4] 말풍선 얹기
 uv run python -m instacut.cli compose
 
+# [5] 검수·수정 — 그림은 그대로 두고 말풍선만 고친다 (비용 없음)
+uv run python -m instacut.cli edit 2                       # 컷 2 의 대사 목록
+uv run python -m instacut.cli edit 2 --line 1 --text "..."  # 대사 수정
+
+# [6] 내보내기 — 업로드 순서대로 번호를 새로 매긴다
+uv run python -m instacut.cli export
+
 # 특정 컷만 다시
 uv run python -m instacut.cli regen 2      # 다른 그림 (GPU)
 uv run python -m instacut.cli compose 3    # 텍스트만 (1초, GPU 안 씀)
+```
+
+### 말풍선 고치기
+
+`edit` 는 `project.json` 을 고치고 그 컷만 다시 합성한다. 그림을 새로 만들지 않으므로
+GPU 도 API 도 쓰지 않는다.
+
+| 인자 | 하는 일 |
+|---|---|
+| `--text "내용"` | 대사를 바꾼다 |
+| `--type dialogue\|thought\|narration` | 말풍선 종류 (생각은 꼬리가 점 세 개) |
+| `--speaker 점원` | 화자. 꼬리가 이 인물을 향한다 |
+| `--pos left-lower` | 말풍선 자리를 못 박는다. `auto` 면 자동 선택으로 되돌린다 |
+| `--tail 점원` | 꼬리가 향할 인물만 따로 지정. 화자 매칭이 빗나갔을 때 쓴다 |
+
+```bash
+# 꼬리가 엉뚱한 사람을 가리킬 때
+uv run python -m instacut.cli edit 2 --line 2 --tail 점원
+
+# 말풍선이 마음에 안 드는 자리에 놓였을 때
+uv run python -m instacut.cli edit 2 --line 2 --pos right-lower
 ```
 
 ### 캐릭터 모델 쓰기

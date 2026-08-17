@@ -503,7 +503,8 @@ def compose_cut(
 
     # 화자가 여럿이면 각자에게 꼬리를 건다. 시나리오가 화자를 알려주므로(speaker)
     # 그림에서 누가 말하는지 추측할 필요가 없다.
-    speakers = {(t.get("speaker") or "").strip() for t in balloons}
+    # `tail` 은 사람이 손으로 정한 꼬리 대상 — 화자 매칭이 빗나갔을 때 덮어쓴다
+    speakers = {(t.get("tail") or t.get("speaker") or "").strip() for t in balloons}
     speakers.discard("")
     # 주인공 혼자 말하는 컷은 이미 상자를 알고 있으니 물을 필요가 없다.
     # 화자가 하나여도 그게 주인공이 아니면 물어야 한다 — 안 그러면 점원이 말하는데
@@ -525,7 +526,8 @@ def compose_cut(
             zone = next((z for z in ZONE_PRIORITY if z not in used), ZONE_PRIORITY[-1])
         used.add(zone)
         # 이 대사의 화자가 어디 있는지 알면 그쪽으로, 모르면 주인공에게
-        speaker_box = people.get((t.get("speaker") or "").strip(), head_used)
+        who = (t.get("tail") or t.get("speaker") or "").strip()
+        speaker_box = people.get(who, head_used)
         shapes, texts_to_draw, font, size = _balloon(
             draw, t["content"].strip(), zone, ART_W, 0, ART_H, t.get("type") == "thought", shift, speaker_box
         )
@@ -756,6 +758,16 @@ def _demo() -> None:
     assert both not in UPPER, f"위쪽이 둘 다 막혔는데 그 자리를 골랐습니다: {both}"
     for box in (clerk, hero):
         assert not overlaps(_to_art_ratio(_zone_box(both, OUT_W, 0, OUT_H), OUT_W, 0, OUT_H), box, 0.04)
+
+    # `tail` 은 화자 매칭이 빗나갔을 때 사람이 손으로 덮어쓰는 값 — speaker 보다 우선한다.
+    # 두 필드가 다 있으면 tail 이 이긴다. 없으면 speaker 로 떨어진다.
+    def who(t):
+        return (t.get("tail") or t.get("speaker") or "").strip()
+
+    assert who({"speaker": "주인공", "tail": "점원"}) == "점원"
+    assert who({"speaker": "주인공"}) == "주인공"
+    assert who({"speaker": "주인공", "tail": ""}) == "주인공"  # 빈 값은 지정이 아니다
+    assert who({}) == ""
 
     # 검출 실패 시 가정값(상단 절반)이 들어와도 위쪽 자리를 쓸 수 있어야 한다.
     # 추측 때문에 시선 흐름을 깨면 안 된다 — 느슨한 tolerance 를 주는 이유.

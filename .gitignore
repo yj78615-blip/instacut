@@ -1,6 +1,7 @@
 # 생성물 — 다시 돌리면 재생성된다
 projects/*/raw/
 projects/*/out/
+projects/*/export/
 outputs/
 # blueprint 는 render.py 가 매번 생성한다 (소스가 아니라 산출물)
 blueprints/

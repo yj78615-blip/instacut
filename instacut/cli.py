@@ -142,6 +142,117 @@ def cmd_show(args) -> None:
     show_translation(project)
 
 
+def _print_lines(cut: dict) -> None:
+    """컷 하나의 대사를 번호와 함께 보여준다 — edit 의 --line 이 이 번호다."""
+    from .compose import ZONES
+
+    print(f"\n  컷 {cut['index']}  {cut['beat']}")
+    if not cut["texts"]:
+        print("    (텍스트 없음)")
+    for i, t in enumerate(cut["texts"], start=1):
+        who = t.get("speaker") or "—"
+        marks = []
+        if t.get("pos"):
+            marks.append(f"자리={t['pos']}")
+        if t.get("tail"):
+            marks.append(f"꼬리→{t['tail']}")
+        tail_note = f"  [{' '.join(marks)}]" if marks else ""
+        print(f"    {i}. ({t.get('type', 'dialogue')}/{who}) {t.get('content', '')}{tail_note}")
+    print(f"\n    자리 후보: {', '.join(ZONES)}")
+
+
+def cmd_edit(args) -> None:
+    """말풍선·꼬리·대사를 고친다. 그림은 건드리지 않으므로 GPU·API 비용이 없다."""
+    from .compose import ZONES, compose_project
+
+    d, project = _load(args.project)
+    cut = next((c for c in project["cuts"] if c["index"] == args.cut), None)
+    if cut is None:
+        sys.exit(f"{args.cut}번 컷이 없습니다")
+
+    # 인자 없이 부르면 지금 상태만 보여준다 — 무엇을 고칠지 정하는 화면
+    if args.line is None:
+        _print_lines(cut)
+        return
+
+    if not 1 <= args.line <= len(cut["texts"]):
+        sys.exit(f"{args.line}번 대사가 없습니다 (1~{len(cut['texts'])})")
+    t = cut["texts"][args.line - 1]
+
+    changed = []
+    if args.text is not None:
+        t["content"] = args.text
+        changed.append("대사")
+    if args.type is not None:
+        t["type"] = args.type
+        changed.append("종류")
+    if args.speaker is not None:
+        t["speaker"] = args.speaker
+        changed.append("화자")
+    if args.pos is not None:
+        if args.pos == "auto":
+            t.pop("pos", None)
+        elif args.pos not in ZONES:
+            sys.exit(f"자리는 {', '.join(ZONES)} 또는 auto 중 하나여야 합니다: {args.pos}")
+        else:
+            t["pos"] = args.pos
+        changed.append("자리")
+    if args.tail is not None:
+        if args.tail == "auto":
+            t.pop("tail", None)
+        else:
+            t["tail"] = args.tail
+        changed.append("꼬리")
+
+    if not changed:
+        sys.exit("바꿀 내용을 주세요 (--text / --type / --speaker / --pos / --tail)")
+
+    _save(d, project)
+    print(f"  컷 {args.cut} / {args.line}번 대사 — {', '.join(changed)} 수정")
+    _print_lines(cut)
+    compose_project(d, project, only=args.cut)  # 바로 결과를 볼 수 있어야 고치기 쉽다
+    _save(d, project)
+
+
+def cmd_export(args) -> None:
+    """완성 컷을 업로드용으로 모은다. 순서대로 번호를 새로 매긴다."""
+    import shutil
+
+    from PIL import Image
+
+    from .compose import OUT_H, OUT_W
+
+    d, project = _load(args.project)
+    dest = Path(args.out) if args.out else d / "export"
+    dest.mkdir(parents=True, exist_ok=True)
+
+    made, missing, wrong = [], [], []
+    for cut in project["cuts"]:
+        src = d / cut["out_image"]
+        if not src.exists():
+            missing.append(cut["index"])
+            continue
+        with Image.open(src) as im:
+            if im.size != (OUT_W, OUT_H):
+                wrong.append((cut["index"], im.size))
+        target = dest / f"{len(made) + 1:02d}.png"
+        shutil.copyfile(src, target)
+        made.append(target)
+
+    for i in missing:
+        print(f"  {i:2d}번 컷: out 그림이 없습니다 — compose 를 먼저 실행하세요")
+    for i, size in wrong:
+        print(f"  {i:2d}번 컷: 규격이 다릅니다 {size} (기대 {OUT_W}x{OUT_H})")
+
+    if not made:
+        sys.exit("내보낼 컷이 없습니다")
+
+    print(f"\n{len(made)}컷 내보냄 → {dest}")
+    print(f"  파일명은 업로드 순서다 (01.png ~ {len(made):02d}.png)")
+    if missing:
+        print(f"  빠진 컷이 있어 번호가 원본과 어긋난다: {missing}")
+
+
 def main() -> None:
     p = argparse.ArgumentParser(prog="instacut", description="텍스트 → 인스타 컷툰")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -180,6 +291,22 @@ def main() -> None:
     s = sub.add_parser("show", help="[2] 번역 결과·컷 스크립트 확인")
     s.add_argument("--project")
     s.set_defaults(func=cmd_show)
+
+    e = sub.add_parser("edit", help="말풍선·꼬리·대사 수정 (그림은 그대로, 비용 없음)")
+    e.add_argument("cut", type=int, help="컷 번호")
+    e.add_argument("--line", type=int, help="몇 번째 대사인지 (생략하면 목록만 보여준다)")
+    e.add_argument("--text", help="대사 내용")
+    e.add_argument("--type", choices=("dialogue", "thought", "narration"), help="말풍선 종류")
+    e.add_argument("--speaker", help="화자 이름")
+    e.add_argument("--pos", help="말풍선 자리. left-upper 등, auto 면 자동 선택으로 되돌린다")
+    e.add_argument("--tail", help="꼬리가 향할 인물. auto 면 화자를 따른다")
+    e.add_argument("--project")
+    e.set_defaults(func=cmd_edit)
+
+    x = sub.add_parser("export", help="완성 컷을 업로드용으로 모은다")
+    x.add_argument("--out", help="내보낼 폴더 (기본: 프로젝트 안 export/)")
+    x.add_argument("--project")
+    x.set_defaults(func=cmd_export)
 
     args = p.parse_args()
     args.func(args)
