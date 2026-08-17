@@ -145,9 +145,12 @@ API 키가 없으면 Haar → 가정값 순으로 자동으로 내려간다.
 
 ## 미구현
 
-- **M2 검수 웹 UI** — 지금은 CLI + 탐색기로 확인한다
-- **M3 인스타 자동 배포** — `out/` 을 수동 업로드한다. Instagram Content Publishing API 는 공개 URL 을 요구해서 임시 호스팅이 필요하다
+- **M2 검수 웹 UI** — 지금은 CLI + 탐색기로 확인한다.
+  수정 자체는 `instacut edit` 으로 되지만(대사·자리·꼬리), 결과를 보려면 탐색기에서 파일을 다시 열어야 한다
+- **M3 인스타 자동 배포** — `instacut export` 까지 하고 업로드는 사람이 한다.
+  Instagram Content Publishing API 는 공개 URL 을 요구해서 임시 호스팅이 필요하다
 - **컷 순서 변경 / 삭제·추가** — `project.json` 을 직접 고쳐야 한다
+- **캡션·해시태그** — `project.json` 에 필드만 있고 채우지 않는다
 - **편별 스타일 프리셋** — 매번 `--style` 로 지정한다 (의도된 설계, PRD 13절)
 
 ---
