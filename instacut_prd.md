@@ -1,6 +1,6 @@
 # InstaCut — 텍스트 → 인스타 컷툰 생성·수정·배포 파이프라인 PRD
 
-- 문서 버전: v1.0 (M0 완료 — 실제 구현 결과 반영)
+- 문서 버전: v1.1 (M0~M1 완료. M2 부터 Next.js + Supabase + TypeScript)
 - 작성일: 2026-08-14
 - 상태: 검토 대기
 
@@ -35,7 +35,8 @@ InstaCut은 원고 텍스트 한 덩어리를 넣으면 컷 단위로 쪼개고,
 - 원고 자체를 창작하는 것 (원고는 사용자가 제공)
 - 동영상·릴스·애니메이션
 - 다국어 (한국어 전용)
-- 다중 사용자 SaaS, 계정 시스템, 결제
+- 결제·구독
+- 다중 사용자 SaaS (단, M2 에서 계정·팀 공유는 범위에 들어온다 — 9절 v2 스택)
 - 웹툰 플랫폼(네이버·카카오) 규격 대응
 
 ---
@@ -429,7 +430,7 @@ VRAM 8GB 에는 SDXL·ControlNet·IP-Adapter·CLIP Vision 을 동시에 못 올�
 
 로컬 Flux 계열과 Flux Kontext 는 캐릭터 일관성이 뛰어나지만 전부 8GB 밖이라 후보에서 빠진다.
 
-### 나머지 스택
+### 나머지 스택 — v1 (현재, 로컬 CLI)
 
 | 영역 | 선택 | 이유 |
 |---|---|---|
@@ -438,10 +439,108 @@ VRAM 8GB 에는 SDXL·ControlNet·IP-Adapter·CLIP Vision 을 동시에 못 올�
 | 컷 분할 LLM | `claude` CLI 헤드리스 | API 키 없이 동작한다 |
 | 말풍선 합성 | Pillow | 별도 의존성 불필요 |
 | 인물 위치 검출 | Gemini 좌표 질의 → Haar → 가정값 | 로컬 검출은 양식화된 캐릭터에서 전부 실패했다 (아래) |
-| 검수 UI | **v1: CLI + 이미지 뷰어** → v2: 로컬 웹 | UI를 먼저 만들면 파이프라인이 늦어진다 |
+| 검수·수정 | `instacut edit` (CLI) | UI를 먼저 만들면 파이프라인이 늦어진다 |
 | 상태 저장 | JSON 파일 | DB 불필요. 프로젝트 = 폴더 |
 
-**DB 없음, 서버 없음, 계정 없음.** 1인용 로컬 도구로 시작한다.
+**DB 없음, 서버 없음, 계정 없음.** 1인용 로컬 도구로 시작했고, M0~M1 은 이 구성으로 끝났다.
+
+### v2 스택 — Next.js + Supabase (M2 부터)
+
+혼자 쓰는 폴더 도구로는 더 못 가는 지점이 셋 있다. **팀 작업**(폴더를 주고받을 수 없다),
+**검수 화면**(고치고 결과를 보려면 탐색기를 다시 열어야 한다), **자동 배포**(인스타 API 가
+공개 URL 을 요구한다). 셋 다 서버가 있어야 풀린다.
+
+| 영역 | 선택 | 이유 |
+|---|---|---|
+| 언어 | **TypeScript** | 프런트·서버·타입 정의를 한 언어로 |
+| 프레임워크 | **Next.js (App Router)** | 서버 액션으로 API 키를 서버에 가둔다 |
+| DB·인증·스토리지 | **Supabase** | Postgres + Auth + Storage 가 한 묶음. RLS 로 프로젝트 격리 |
+| 이미지 저장 | Supabase Storage | **공개 URL 이 나온다 — 인스타 배포의 전제조건** |
+| 배포 | Vercel | Next.js 기본 경로 |
+
+**Supabase Storage 가 M3 의 걸림돌을 그대로 푼다.** Instagram Content Publishing API 는
+로컬 파일을 못 받고 공개 URL 을 요구한다. 그동안 이것 때문에 자동 배포를 미뤘는데,
+스토리지를 쓰면 별도 호스팅을 붙일 이유가 없어진다.
+
+#### 파이썬 파이프라인은 어떻게 되나
+
+**이식하지 않는다.** `compose.py` 는 말풍선 규칙(P-6/P-7, 문장 분할, 꼬리 방향,
+다중 인물 회피)이 응축된 400줄이고, 이 규칙들은 실패를 거쳐 얻은 것이다
+([ISSUES.md](ISSUES.md)). TypeScript 로 다시 쓰면 그 실패를 다시 겪는다.
+
+대신 **역할을 나눈다.**
+
+| | 담당 | 왜 |
+|---|---|---|
+| 컷 분할·번역·생성·합성 | Python (그대로) | 검증된 로직. ComfyUI·Pillow 생태계에 붙어 있다 |
+| 프로젝트·컷·대사 CRUD | TypeScript (Supabase) | 웹에서 고치는 것은 텍스트와 좌표뿐이다 |
+| 검수 화면·배포 | TypeScript (Next.js) | 브라우저에서 보고 누르는 일 |
+
+`project.json` 이 이미 **모든 상태를 담은 단일 문서**라, 그대로 DB 행으로 옮기면 된다.
+합성은 텍스트만 바뀌어도 다시 돌려야 하므로 파이썬을 호출해야 한다 — 이 경계가 v2 설계의
+핵심 결정이고, 자세한 갈래는 아래 「열린 질문」에 적는다.
+
+#### 리전을 맞출 것
+
+Vercel 함수와 Supabase 프로젝트가 다른 대륙에 있으면 쿼리마다 왕복이 붙는다.
+한국 사용자 기준으로 **Supabase 도쿄 리전 + `vercel.json` 의 `regions: ["hnd1"]`** 으로
+맞춘다. 이걸 놓치면 첫 화면이 수 초씩 걸린다.
+
+#### 스키마 초안
+
+```sql
+-- 프로젝트 = 지금의 projects/<제목>/ 폴더
+create table projects (
+  id uuid primary key default gen_random_uuid(),
+  owner uuid references auth.users not null,
+  title text not null,
+  source_text text not null,
+  style jsonb not null,          -- art_style_ko/en, character_ko/en, aspect_ratio
+  backend text not null default 'gemini',
+  created_at timestamptz default now()
+);
+
+-- 컷 = project.json 의 cuts[] 한 항목
+create table cuts (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid references projects on delete cascade not null,
+  idx int not null,              -- 표시 순서. 파일명과 묶지 않는다 (이슈 #6)
+  beat text,
+  scene_en text not null,
+  scale text default '',         -- 비우면 백엔드 프로파일 기본값
+  seed bigint not null,
+  subject_box real[4],           -- 인물 좌표. 캐시라 다시 묻지 않는다
+  raw_path text,                 -- Storage 경로
+  out_path text,
+  locked boolean default false,
+  unique (project_id, idx)
+);
+
+-- 대사 = cuts[].texts[] 한 항목
+create table texts (
+  id uuid primary key default gen_random_uuid(),
+  cut_id uuid references cuts on delete cascade not null,
+  ord int not null,
+  kind text not null check (kind in ('dialogue','thought','narration')),
+  content text not null,
+  speaker text,
+  pos text,                      -- 말풍선 자리를 못 박을 때만
+  tail text                      -- 꼬리 대상을 따로 지정할 때만
+);
+```
+
+**`idx` 를 파일 경로와 묶지 않는다.** 지금은 `raw/cut_03.png` 처럼 번호가 파일명에 박혀 있어
+컷 순서를 바꾸면 파일까지 옮겨야 한다(이슈 #6). DB 로 가면서 이 결합을 끊는다 —
+순서는 `idx`, 파일은 `raw_path` 가 각자 안다.
+
+**RLS 는 처음부터 켠다.** 나중에 붙이면 이미 새는 경로를 찾아야 한다.
+`owner = auth.uid()` 한 줄로 시작하고, 팀 공유는 그 위에 얹는다.
+
+#### API 키는 서버에만 둔다
+
+`GOOGLE_API_KEY` 는 서버 액션·Route Handler 안에서만 읽는다. `NEXT_PUBLIC_` 접두사를
+붙이면 브라우저 번들에 그대로 실린다 — 공개 저장소에 올라가는 프로젝트라 특히 조심할 것.
+클라이언트에는 Supabase anon 키만 나가고, 그 키의 권한은 RLS 가 정한다.
 
 ### 인물 위치는 그림에서 되찾을 수 없다
 
@@ -493,16 +592,23 @@ VRAM 8GB 에는 SDXL·ControlNet·IP-Adapter·CLIP Vision 을 동시에 못 올�
 - 버전 보존 (덮어쓰기 금지)
 - 캐릭터 일관성 보강 — **M0에서 문자열 고정만으로 부족했을 때만.** 참조 이미지(IP-Adapter) 도입 검토
 
-### M2 — 검수 UI
+### M2 — 검수 UI (Next.js + Supabase)
 
-- 로컬 웹 페이지 (컷 그리드 뷰 + 컷 클릭 → 재생성/텍스트 수정)
-- M1의 CLI 명령을 그대로 호출하는 얇은 껍데기
+- Supabase 스키마 구축 + `project.json` 마이그레이션 스크립트
+- 컷 그리드 뷰 → 컷 클릭 → 대사·말풍선 자리·꼬리 수정
+- 수정하면 합성만 다시 돌린다 (그림은 그대로 — GPU·API 비용 없음)
+- 인증(Supabase Auth) + RLS. 팀 공유는 여기서 열린다
+
+**전제**: 웹에서 고치는 것은 텍스트와 좌표뿐이다. 그림 생성은 여전히 로컬 파이썬이 한다.
 
 ### M3 — 자동 배포
 
-- 이미지 임시 호스팅 경로 확보
+- Supabase Storage 공개 URL (**M2 에서 이미 확보된다**)
 - Instagram Content Publishing API 연동
-- 게시 전 규격 검증 게이트
+- 게시 전 규격 검증 게이트 — `instacut export` 의 검사를 서버로 옮긴다
+- 캡션·해시태그 입력 (지금은 `project.json` 에 필드만 있고 비어 있다)
+
+M2 를 하면 M3 의 걸림돌(공개 URL)이 부수적으로 풀린다. 순서를 뒤집을 이유가 없다.
 
 ---
 
@@ -554,6 +660,24 @@ VRAM 8GB 에는 SDXL·ControlNet·IP-Adapter·CLIP Vision 을 동시에 못 올�
 | 화풍 입력 언어 | **한국어로 받아 [1]이 영어로 변환, 결과를 사용자에게 공유** | 번역 계층(P-5, F-2)이 추가되었으나 **LLM 호출은 늘지 않음** — 컷 분할과 같은 호출에 흡수 |
 
 두 결정으로 M0에서 빠진 것: 캐릭터 시트 생성·승인 플로우, 프로젝트 간 시트 복사, 스타일 프리셋 관리. **M0이 실질적으로 파일 3개 규모로 줄었다.**
+
+### v2 로 넘어가며 정해야 할 것
+
+**합성을 어디서 돌리나.** 대사를 고치면 `compose` 를 다시 돌려야 하는데, 파이썬이 로컬에
+있고 웹은 클라우드에 있다. 갈래가 셋이다.
+
+| 방식 | 장점 | 대가 |
+|---|---|---|
+| 로컬 에이전트 | 지금 코드 그대로. GPU 도 그대로 | 사용자 PC 가 켜져 있어야 한다 |
+| 파이썬을 컨테이너로 배포 | 어디서나 돈다 | 배포·비용이 늘고, 로컬 ComfyUI 는 못 쓴다 |
+| 합성만 TypeScript 로 이식 | 서버리스로 끝난다 | **말풍선 규칙 400줄을 다시 쓴다** — 실패를 다시 겪을 위험 |
+
+지금 판단으로는 **로컬 에이전트**가 맞다. 이 도구의 사용자는 자기 PC 에서 그림을 만드는
+사람이고, 합성은 그 PC 에 이미 있는 것을 쓰면 된다. 다만 팀 공유가 목적이라면 이 전제가
+깨지므로, **팀 규모가 정해지기 전에는 확정하지 않는다.**
+
+**`project.json` 과 DB 중 무엇이 원본인가.** 둘 다 두면 반드시 어긋난다.
+M2 시점에 DB 를 원본으로 삼고 `project.json` 은 로컬 캐시로 내리는 것이 깔끔하다.
 
 ### 열린 질문
 

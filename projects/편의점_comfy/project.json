@@ -1,0 +1,107 @@
+{
+  "title": "편의점_comfy",
+  "source_text": "퇴근길에 편의점에 들렀다.\n\n계산대에 삼각김밥을 올려놓자 점원이 물었다. \"봉투 필요하세요?\" 나는 고개를 저었다. \"아니요, 그냥 주세요.\"\n\n점원이 바코드를 찍으며 말했다. \"천오백 원입니다.\" 카드를 내밀면서 오늘 하루가 이걸로 끝났다는 게 실감났다.\n\n밖으로 나오니 바람이 선선했다. 봉투값 백 원 아꼈네, 하고 생각했다.",
+  "style": {
+    "art_style_ko": "아주 단순한 검은 선화, 굵고 일정한 윤곽선, 음영과 질감 없음, 배경도 같은 선화로 간결하게, 색은 아주 연하게만",
+    "art_style_en": "minimal black line art, clean thick uniform outlines, no shading, no gradients, no texture, simple line-drawn background with a few essential props, very light flat colors, childlike simple drawing",
+    "character_ko": "아주 단순한 그림체의 캐릭터 한 명, 크고 둥근 민머리, 점 두 개로 찍은 눈, 크게 웃는 반달 입, 세로로 긴 타원 몸통, 몸통에서 바로 갈라지는 짧은 다리, 몸 옆에 붙은 짧은 팔, 2등신 비율, 코는 그리지 않음",
+    "character_en": "solo, a single simple cartoon character alone, large round completely bald head, two small black dot eyes, wide curved smile, no nose, tall oval body, short legs splitting directly from the body, short arms along the sides, two-heads-tall chibi proportions, clean thick outlines, no hair, no clothing details",
+    "aspect_ratio": "1:1"
+  },
+  "caption": "",
+  "hashtags": [],
+  "cuts": [
+    {
+      "index": 1,
+      "beat": "퇴근길에 편의점 문을 열고 들어선다",
+      "scene_en": "wide shot of a small convenience store entrance at dusk, the character stepping inside through a glass door, shelves visible behind",
+      "scale": "",
+      "final_prompt": "minimal black line art, clean thick uniform outlines, no shading, no gradients, no texture, simple line-drawn background with a few essential props, very light flat colors, childlike simple drawing, solo, a single simple cartoon character alone, large round completely bald head, two small black dot eyes, wide curved smile, no nose, tall oval body, short legs splitting directly from the body, short arms along the sides, two-heads-tall chibi proportions, clean thick outlines, no hair, no clothing details, wide shot of a small convenience store entrance at dusk, the character stepping inside through a glass door, shelves visible behind, wide establishing shot, small distant figure, subject occupies about one third of the frame height, full body visible from head to feet, vast surrounding environment dominates the frame, camera far from the subject",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 26367330,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "퇴근길에 편의점에 들렀다."
+        }
+      ],
+      "raw_image": "raw/cut_01.png",
+      "out_image": "out/cut_01.png",
+      "locked": false
+    },
+    {
+      "index": 2,
+      "beat": "계산대에서 점원이 봉투가 필요한지 묻고, 주인공이 거절한다",
+      "scene_en": "at a convenience store checkout counter, the store clerk on the left side of the frame behind the counter, the character on the right side of the frame facing the clerk, a rice ball on the counter between them",
+      "scale": "",
+      "final_prompt": "minimal black line art, clean thick uniform outlines, no shading, no gradients, no texture, simple line-drawn background with a few essential props, very light flat colors, childlike simple drawing, solo, a single simple cartoon character alone, large round completely bald head, two small black dot eyes, wide curved smile, no nose, tall oval body, short legs splitting directly from the body, short arms along the sides, two-heads-tall chibi proportions, clean thick outlines, no hair, no clothing details, at a convenience store checkout counter, the store clerk on the left side of the frame behind the counter, the character on the right side of the frame facing the clerk, a rice ball on the counter between them, wide establishing shot, small distant figure, subject occupies about one third of the frame height, full body visible from head to feet, vast surrounding environment dominates the frame, camera far from the subject, two characters facing each other",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 26367330,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "dialogue",
+          "content": "봉투 필요하세요?",
+          "speaker": "점원"
+        },
+        {
+          "type": "dialogue",
+          "content": "아니요, 그냥 주세요.",
+          "speaker": "주인공"
+        }
+      ],
+      "raw_image": "raw/cut_02.png",
+      "out_image": "out/cut_02.png",
+      "locked": false
+    },
+    {
+      "index": 3,
+      "beat": "점원이 바코드를 찍고 주인공이 카드를 내민다",
+      "scene_en": "at the same convenience store counter, the store clerk on the left side of the frame scanning a barcode at the register, the character on the right side of the frame holding out a card across the counter, close view of the counter, no aisles or distant shelves visible",
+      "scale": "medium shot, subject occupies about half of the frame height, upper body and hands visible, camera close to the counter",
+      "final_prompt": "minimal black line art, clean thick uniform outlines, no shading, no gradients, no texture, simple line-drawn background with a few essential props, very light flat colors, childlike simple drawing, solo, a single simple cartoon character alone, large round completely bald head, two small black dot eyes, wide curved smile, no nose, tall oval body, short legs splitting directly from the body, short arms along the sides, two-heads-tall chibi proportions, clean thick outlines, no hair, no clothing details, at the same convenience store counter, the store clerk on the left side of the frame scanning a barcode at the register, the character on the right side of the frame holding out a card across the counter, close view of the counter, no aisles or distant shelves visible, medium shot, subject occupies about half of the frame height, upper body and hands visible, camera close to the counter",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 26367330,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "dialogue",
+          "content": "천오백 원입니다.",
+          "speaker": "점원"
+        },
+        {
+          "type": "narration",
+          "content": "오늘 하루가 이걸로 끝났다는 게 실감났다."
+        }
+      ],
+      "raw_image": "raw/cut_03.png",
+      "out_image": "out/cut_03.png",
+      "locked": false
+    },
+    {
+      "index": 4,
+      "beat": "편의점 밖으로 나와 선선한 바람을 맞는다",
+      "scene_en": "wide shot of the character walking out of the store into the evening street, holding a small item, empty sidewalk",
+      "scale": "",
+      "final_prompt": "minimal black line art, clean thick uniform outlines, no shading, no gradients, no texture, simple line-drawn background with a few essential props, very light flat colors, childlike simple drawing, solo, a single simple cartoon character alone, large round completely bald head, two small black dot eyes, wide curved smile, no nose, tall oval body, short legs splitting directly from the body, short arms along the sides, two-heads-tall chibi proportions, clean thick outlines, no hair, no clothing details, wide shot of the character walking out of the store into the evening street, holding a small item, empty sidewalk, wide establishing shot, small distant figure, subject occupies about one third of the frame height, full body visible from head to feet, vast surrounding environment dominates the frame, camera far from the subject",
+      "negative_prompt": "text, letters, korean text, speech bubble, caption, watermark, signature, logo, ugly, deformed",
+      "seed": 26367330,
+      "balloon_zone": "left",
+      "texts": [
+        {
+          "type": "narration",
+          "content": "밖으로 나오니 바람이 선선했다."
+        },
+        {
+          "type": "thought",
+          "content": "봉투값 백 원 아꼈네.",
+          "speaker": "주인공"
+        }
+      ],
+      "raw_image": "raw/cut_04.png",
+      "out_image": "out/cut_04.png",
+      "locked": false
+    }
+  ]
+}
