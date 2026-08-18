@@ -210,8 +210,13 @@ def parse_box(text: str) -> tuple[float, float, float, float] | None:
         return None
 
 
-def parse_people(text: str) -> dict[str, tuple]:
-    """응답에서 {"people": [{"label", "x0"...}]} 를 꺼내 라벨→상자 로 만든다."""
+def parse_people(text: str, roles: list[str] | None = None) -> dict[str, tuple]:
+    """응답에서 {"people": [{"label", "x0"...}]} 를 꺼내 라벨→상자 로 만든다.
+
+    `roles` 를 주면 그 이름으로 정규화한다. 후보를 프롬프트로 줘도 모델이 벗어난
+    이름을 답하기 때문이다 — `주인공` 대신 `손님` 이 왔고, 그러면 매칭이 빗나가
+    꼬리가 엉뚱한 사람을 겨눴다. 지시를 강화하는 것만으로는 못 믿는다.
+    """
     m = re.search(r"\{.*\"people\".*\}", text, re.S)
     if not m:
         return {}
@@ -220,12 +225,42 @@ def parse_people(text: str) -> dict[str, tuple]:
     except json.JSONDecodeError:
         return {}
 
-    out: dict[str, tuple] = {}
+    found: list[tuple[str, tuple]] = []
     for p in people:
         label = (p.get("label") or "").strip()
         box = _box_of(p)
-        if label and box and label not in out:
+        if label and box:
+            found.append((label, box))
+
+    if roles is None:  # 정규화 없이 그대로 (같은 라벨이 겹치면 첫 것을 쓴다)
+        return {label: box for label, box in reversed(found)}
+
+    return _match_roles(found, roles)
+
+
+def _match_roles(found: list[tuple[str, tuple]], roles: list[str]) -> dict[str, tuple]:
+    """응답 라벨을 후보 이름으로 맞춘다.
+
+    1. 정확히 일치하는 것부터 가져간다
+    2. 남은 응답을 남은 후보에 순서대로 배정한다 (`손님` → `주인공`)
+    3. 그래도 남으면 버린다 — 모르는 사람을 화자로 만들지 않는다
+    """
+    out: dict[str, tuple] = {}
+    left = list(found)
+
+    for label, box in list(left):
+        if label in roles and label not in out:
             out[label] = box
+            left.remove((label, box))
+
+    # 남은 개수가 정확히 맞을 때만 배정한다. 응답이 후보보다 적으면 누가 빠졌는지
+    # 알 수 없어서, 남은 후보 중 아무에게나 붙이면 꼬리가 엉뚱한 사람을 겨눈다.
+    # 그럴 바에는 비워두는 편이 낫다 — 호출자가 주인공 상자로 폴백한다.
+    remaining = [r for r in roles if r not in out]
+    if len(left) == len(remaining):
+        for (label, box), role in zip(left, remaining):
+            out[role] = box
+
     return out
 
 
@@ -236,7 +271,8 @@ def locate_people(img, roles: list[str], model: str = VISION_MODEL, timeout: int
     (`texts[].speaker`) 그 이름을 후보로 주고 매칭시킨다.
     """
     prompt = PEOPLE_PROMPT.format(roles=", ".join(roles) if roles else "주인공")
-    return parse_people(extract_text(_ask(img, prompt, model, timeout)))
+    # 후보를 넘겨 응답 라벨을 시나리오 이름으로 정규화한다 — 모델이 후보를 벗어나기 때문이다
+    return parse_people(extract_text(_ask(img, prompt, model, timeout)), roles)
 
 
 def _ask(img, prompt: str, model: str, timeout: int) -> dict:
@@ -321,6 +357,51 @@ def _demo() -> None:
     # 점원은 왼쪽, 주인공은 오른쪽 — 축이 뒤바뀌면 이 비교가 깨진다
     assert got["점원"][0] < got["주인공"][0], "x/y 축이 뒤바뀌었습니다"
     assert parse_people('{"people": []}') == {}
+
+    # 후보 밖 라벨을 후보 이름으로 맞춘다.
+    # 실제로 시나리오는 `주인공` 인데 모델이 `손님` 이라 답했고, 꼬리가 빗나갔다.
+    roles = ["점원", "주인공"]
+    off = (
+        '{"people": ['
+        '{"label": "점원", "x0": 0.13, "y0": 0.37, "x1": 0.28, "y1": 0.68},'
+        '{"label": "손님", "x0": 0.42, "y0": 0.36, "x1": 0.63, "y1": 0.67}]}'
+    )
+    fixed = parse_people(off, roles)
+    assert set(fixed) == {"점원", "주인공"}, fixed
+    assert fixed["점원"][0] == 0.13 and fixed["주인공"][0] == 0.42, fixed  # 상자가 뒤바뀌면 안 된다
+
+    # 일치하는 것을 먼저 가져간다 — 순서가 어긋나 있어도 이름이 맞으면 그대로
+    swapped = parse_people(
+        '{"people": ['
+        '{"label": "행인", "x0": 0.13, "y0": 0.37, "x1": 0.28, "y1": 0.68},'
+        '{"label": "점원", "x0": 0.42, "y0": 0.36, "x1": 0.63, "y1": 0.67}]}',
+        roles,
+    )
+    assert swapped["점원"][0] == 0.42, swapped  # 이름이 맞는 쪽이 먼저
+    assert swapped["주인공"][0] == 0.13, swapped  # 남은 하나가 남은 후보로
+
+    # 후보보다 많이 오면 남는 것을 배정하지 않는다 — 둘 중 누가 주인공인지 모른다.
+    # 이름이 맞은 것만 남는다.
+    crowd = parse_people(
+        '{"people": ['
+        '{"label": "점원", "x0": 0.1, "y0": 0.1, "x1": 0.2, "y1": 0.9},'
+        '{"label": "손님", "x0": 0.3, "y0": 0.1, "x1": 0.4, "y1": 0.9},'
+        '{"label": "행인", "x0": 0.5, "y0": 0.1, "x1": 0.6, "y1": 0.9}]}',
+        roles,
+    )
+    assert set(crowd) == {"점원"}, crowd
+
+    # 응답이 후보보다 적으면 배정하지 않는다 — 누가 빠졌는지 모르는데 붙이면
+    # 꼬리가 엉뚱한 사람을 겨눈다. 비워두면 호출자가 주인공 상자로 폴백한다.
+    lone = parse_people('{"people": [{"label": "손님", "x0": 0.4, "y0": 0.3, "x1": 0.6, "y1": 0.7}]}', roles)
+    assert lone == {}, lone
+
+    # 이름이 맞으면 하나만 와도 그대로 쓴다
+    named_one = parse_people('{"people": [{"label": "점원", "x0": 0.1, "y0": 0.3, "x1": 0.2, "y1": 0.7}]}', roles)
+    assert set(named_one) == {"점원"}, named_one
+
+    # 후보를 안 주면 손대지 않는다 (기존 동작)
+    assert set(parse_people(off)) == {"점원", "손님"}
 
     # 못 찾으면 조용히 빈 값을 주지 말고 실패해야 한다
     try:

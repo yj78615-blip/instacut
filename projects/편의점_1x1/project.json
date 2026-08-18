@@ -48,13 +48,18 @@
         {
           "type": "dialogue",
           "content": "아니요, 그냥 주세요.",
-          "speaker": "주인공",
-          "tail": "손님"
+          "speaker": "주인공"
         }
       ],
       "raw_image": "raw/cut_02.png",
       "out_image": "out/cut_02.png",
-      "locked": false
+      "locked": false,
+      "subject_box": [
+        0.62,
+        0.49,
+        0.8,
+        0.81
+      ]
     },
     {
       "index": 3,
