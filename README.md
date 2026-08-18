@@ -147,7 +147,6 @@ projects/<제목>/
 | [#3](https://github.com/yj78615-blip/instacut/issues/3) | 캐릭터 LoRA 학습 | 8GB 에서 SDXL LoRA 학습이 되는지 미확인. 되면 캐릭터 비용이 초기 한 번으로 끝난다 |
 | [#5](https://github.com/yj78615-blip/instacut/issues/5) | `render` 재시도 — 이미지 대신 설명 텍스트만 오는 경우 | 재시도하면 대개 바로 성공한다. 한 컷만 다시 돌리면 되니 치명적이지 않다 |
 | [#6](https://github.com/yj78615-blip/instacut/issues/6) | 컷 순서 변경·삭제·삽입 | `edit` 은 컷 **안**만 고친다. 인덱스와 파일명이 묶여 있어 구조를 손봐야 한다 |
-| [#7](https://github.com/yj78615-blip/instacut/issues/7) | M3 인스타 자동 배포 | API 가 공개 URL 을 요구해 임시 호스팅이 필요하다. 캡션·해시태그도 아직 비어 있다 |
 
 **#2 와 #3 이 둘 다 되면 크레딧 없이 전체 파이프라인이 돈다.**
 
