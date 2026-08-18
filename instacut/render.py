@@ -152,7 +152,7 @@ def build_blueprint(
     """컷 하나당 foreach 아이템 하나. 단일 그래프로 팬아웃된다."""
     items = []
     for cut in cuts:
-        cut["final_prompt"] = assemble_prompt(project, cut)
+        cut["final_prompt"] = assemble_prompt(project, cut, "comfy")
         items.append(
             {
                 "id": f"cut_{cut['index']:02d}",
@@ -237,7 +237,7 @@ def render_gemini(project_dir: Path, project: dict, cuts: list[dict]) -> list[Pa
 
     made = []
     for cut in cuts:
-        cut["final_prompt"] = assemble_prompt(project, cut)
+        cut["final_prompt"] = assemble_prompt(project, cut, "gemini")
         target = project_dir / cut["raw_image"]
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(gemini.generate(cut["final_prompt"], ref_path))

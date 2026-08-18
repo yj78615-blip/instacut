@@ -44,7 +44,7 @@
 
 ## 2. 샷 사이즈 — 인물이 프레임을 얼마나 차지하나
 
-거리 어휘는 확립돼 있고 모델이 잘 따른다. 우리 `SUBJECT_SCALE` 이 여기 해당한다.
+거리 어휘는 확립돼 있고 모델이 잘 따른다. 우리 프로파일의 `scale` 이 여기 해당한다(`split.WIDE_SCALE`).
 
 | 이름 | 인물이 차지하는 높이 | 컷툰에서 |
 |---|---|---|
@@ -187,8 +187,8 @@ Google 문서가 제시하는 기본 형태다. 우리 `assemble_prompt()` 도 �
 ```
 
 구도 어휘를 너무 많이 쌓으면 서로 충돌한다는 조언이 있으나(2~3개 권장), 이는 블로그
-수준의 경험담이고 우리가 검증하지 않았다. 현재 `RESERVE_DIALOGUE` 는 네 가지를 쌓고도
-작동한다.
+수준의 경험담이다. 우리가 확인한 것은 조금 다르다 — **충돌보다 캐릭터 레퍼런스가 밀리는 쪽이
+먼저 나타난다**(v2). 어휘 수 자체보다 레퍼런스와의 균형이 문제다.
 
 ---
 
@@ -247,40 +247,51 @@ Gemini 같은 통합(unified) 모델은 이미지와 텍스트 입력을 한 모
 
 ---
 
-## 8. 현재 코드에 대한 진단
+## 8. 코드에 어떻게 반영했나
 
-`split.py` 의 구도 지시를 위 기준으로 보면 이렇다.
+구도 지시가 백엔드마다 갈리므로 **전역 상수 대신 프로파일**로 나눠 두었다
+(`split.PROFILES`). 같은 컷이라도 어느 백엔드로 그리느냐에 따라 다른 지시를 받는다.
 
-| 상수 | 지금 내용 | Nano Banana | 로컬 SDXL |
-|---|---|---|---|
-| `SUBJECT_SCALE` | `wide establishing shot`, `one third of the frame height`, `head to feet` | 유효 | 유효 |
-| `RESERVE[1]` | `subject on the right side`, `upper left quadrant empty` | **유효** (컷3·컷4 확인) | 무효 |
-| `RESERVE[2]` | 두 사분면 비우기 | 미검증 | 무효 |
-| `RESERVE_MANY` | `upper half and both side margins empty` | 미검증 | 무효 |
-| `RESERVE_DIALOGUE` | `centered horizontally and vertically`, `close together` | **유효** (컷2 확인) | 부분 |
+| | `gemini` | `comfy` |
+|---|---|---|
+| 크기 (`scale`) | `wide establishing shot` 외 5마디 | 같음 — 크기는 어디서나 통한다 |
+| 위치 (`reserve`) | `middle horizontal third` / `lower two thirds` | **없음** |
+| 대화 (`dialogue`) | `facing each other` + 중앙 밴드 | `facing each other` 만 |
 
-**Nano Banana 백엔드에서는 자리 예약이 작동한다.** 편의점 4컷이 근거다.
-로컬 SDXL 경로에서는 여전히 안 듣고, 그쪽은 ControlNet 스틱 피규어로 위치를 강제하는
-편이 확실하다(`pose.py`).
+`comfy` 에서 위치 지시를 뺀 이유는 무시되기 때문만이 아니다. **무시되면서 다른 어휘를
+밀어낸다.** 어휘를 쌓으면 캐릭터 레퍼런스의 비중이 떨어진다는 것을 v2 에서 확인했다 —
+안 먹는 지시를 넣는 것은 공짜가 아니다. SDXL 경로의 위치는 ControlNet 스틱 피규어가
+강제한다(`pose.py`).
 
-그리고 어느 쪽이든 합성 단계가 인물 위치를 **보고 나서** 말풍선을 놓으므로(P-7, `subject_box`)
-생성이 빗나가도 수습된다. 다만 인물이 프레임 끝에 붙으면 수습할 여지가 좁아진다.
+대화 컷의 `facing each other` 는 양쪽에 남겼다. **위치 지시가 아니라 장면 묘사**라
+확산 모델에서도 통한다 — "어디에 놓아라" 가 아니라 "무엇을 그려라" 이기 때문이다.
 
-### 남은 개선 여지
+모르는 백엔드 이름은 `gemini` 프로파일로 떨어진다. 새 백엔드를 붙이는 중에도 파이프라인이
+돌아야 하고, 프로파일이 없다고 멈추는 것보다는 낫다.
 
-지금 지시는 컷툰의 세로 배치를 다루지 않는다. `RESERVE[1]` 은 좌우만 말하고, 인물이
-세로로 어디 서는지는 방치한다. 4절에서 정리한 "중앙 밴드" 를 명시하면 위·아래 말풍선
-자리가 함께 확보된다.
+### 크기 어휘를 함부로 줄이지 말 것
 
-```python
-RESERVE_CENTER = (
-    "subject center-framed, "
-    "subject MUST be positioned on the middle horizontal third of the frame, "
-    "generous headroom above and floor space below"
-)
+`small distant figure`·`vast surrounding environment`·`camera far from the subject` 를
+"`wide establishing shot` 과 같은 말" 이라 보고 걷어냈더니 인물이 화면 절반을 넘었다(v3).
+중복이 아니라 각자 크기 제어에 기여하고 있었다. 수치(`one third of the frame height`)만
+남기는 것으로는 안 된다 — 수치 지시의 준수율은 30~40% 대다(5절).
+
+반대로 어휘를 늘리면 캐릭터가 흔들린다(v2). 지금 값은 그 사이에서 찾은 균형이고,
+**모델을 바꾸면 다시 맞춰야 한다.**
+
+### 컷별 예외
+
+공간이 주인공이 아닌 컷은 `cut["scale"]` 로 프로파일 기본값을 덮는다. 계산대 앞처럼
+인물 사이 거리가 짧은 장면을 원경으로 잡으면 배경만 남는다.
+
+```json
+{"index": 3, "scale": "medium shot, subject occupies about half of the frame height, camera close to the counter"}
 ```
 
-미검증안이다. 적용하려면 컷 하나로 시험해야 한다.
+### 그래도 합성이 마지막 안전망이다
+
+어느 백엔드든 합성 단계가 인물 위치를 **보고 나서** 말풍선을 놓으므로(P-7, `subject_box`)
+생성이 빗나가도 수습된다. 다만 인물이 프레임 끝에 붙거나 화면을 꽉 채우면 수습할 여지가 좁아진다.
 
 ---
 

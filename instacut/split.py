@@ -24,40 +24,64 @@ NEGATIVE = (
 # 그림을 먼저 만들고 빈 곳을 찾는 방식은 순서가 거꾸로다. 인물이 어디에 서느냐를
 # 모델이 마음대로 정해버리면 말풍선은 남는 자리로 밀려날 수밖에 없다.
 # 컷의 대사 개수를 세어, 실제로 쓸 자리를 비우도록 프롬프트에 미리 박는다.
-# 말풍선은 위(ZONES y 0.05)와 아래(y 0.70)를 쓴다. 인물은 그 사이 중앙 밴드에 서야 한다.
-# 좌우만 지시하고 세로를 방치하면 인물이 위아래로 붙어 말풍선과 겹친다.
+# 구도 지시는 **백엔드마다 다르다.** 같은 문장이 Nano Banana 에서는 지켜지고
+# SDXL 에서는 무시된다 — 확산 모델은 레이아웃을 텍스트가 아니라 초기 노이즈가 정하기
+# 때문이다 (COMPOSITION.md 6절). 그래서 전역 상수 대신 프로파일로 나눠 둔다.
 #
 # 표현은 모두 **프레임 기준(자기중심)** 이다. 인물의 왼손·오른쪽 얼굴처럼 대상 기준으로
-# 말하면 모델이 좌우를 뒤집는다 (COMPOSITION.md 6절, GenSpace 94.55% 대 21.21%).
-# 위치는 컷당 한 마디만 쓴다. 좌우까지 지시했더니 어휘가 쌓여 캐릭터 레퍼런스가 밀렸고,
-# 좌우는 어차피 합성 단계가 그림을 뒤집어 해결한다(P-6).
+# 말하면 모델이 좌우를 뒤집는다 (GenSpace 94.55% 대 21.21%).
+
+# 말풍선은 위(ZONES y 0.05)와 아래(y 0.70)를 쓴다. 인물은 그 사이 중앙 밴드에 서야 한다.
+# 위치는 컷당 한 마디만 쓴다 — 어휘를 쌓았더니 캐릭터 레퍼런스가 밀렸다(v2).
 MIDDLE = "subject MUST be positioned on the middle horizontal third of the frame"
 
-RESERVE = {
-    0: "",  # 나레이션만 있는 컷 — 그림 밖 띠를 쓰므로 구도가 자유롭다
-    # 말풍선이 하나면 위쪽만 쓴다 — 인물은 그 아래 어디든 된다
-    1: "subject MUST be positioned on the lower two thirds of the frame",
-    2: MIDDLE,  # 위아래를 다 쓰므로 인물은 그 사이에
-}
-RESERVE_MANY = MIDDLE
-
-# 화자가 둘 이상인 컷 — 마주 보게 해야 대화로 읽힌다. 여기만 두 마디를 쓴다.
-RESERVE_DIALOGUE = "two characters facing each other, both " + MIDDLE.replace("subject MUST be", "MUST be")
-
-# 인물이 프레임을 꽉 채우면 말풍선 놓을 자리가 없다. 전 컷에 공통으로 주입해 구도를 넓힌다.
-# 합성 단계에서 그림을 축소하는 방법도 있지만, 그러면 주변에 채울 배경이 없어 흰 여백이 생긴다.
+# 인물이 프레임을 꽉 채우면 말풍선 놓을 자리가 없다.
 # 이 어휘들을 "wide establishing shot 과 같은 말" 이라고 보고 걷어냈더니 인물이 화면
 # 절반을 넘게 커졌다(v3). 중복이 아니라 각자 크기 제어에 기여하고 있었다.
 # 수치(`one third`)만으로는 안 된다 — 수치 지시의 준수율은 30~40% 대다(COMPOSITION.md 5절).
-SUBJECT_SCALE = (
+#
+# `full upper body` 라고 썼더니 모델이 상반신 구도로 갔다. 전신을 보려면 head to feet 이라고 해야 한다.
+# 여기서 더 줄이면 표정이 안 보여 컷툰으로 성립하지 않는다.
+WIDE_SCALE = (
     "wide establishing shot, small distant figure, "
     "subject occupies about one third of the frame height, "
     "full body visible from head to feet, "
     "vast surrounding environment dominates the frame, "
     "camera far from the subject"
 )
-# `full upper body` 라고 썼더니 모델이 상반신 구도로 갔다. 전신을 보려면 head to feet 이라고 해야 한다.
-# 여기서 더 줄이면 표정이 안 보여 컷툰으로 성립하지 않는다.
+
+PROFILES = {
+    # 언어를 이해하는 모델 — 영역 지정이 통한다. 편의점 4컷에서 확인했다.
+    "gemini": {
+        "scale": WIDE_SCALE,
+        "reserve": {
+            0: "",  # 나레이션만 있는 컷 — 상단 박스만 쓰므로 구도가 자유롭다
+            # 말풍선이 하나면 위쪽만 쓴다 — 인물은 그 아래 어디든 된다
+            1: "subject MUST be positioned on the lower two thirds of the frame",
+            2: MIDDLE,  # 위아래를 다 쓰므로 인물은 그 사이에
+        },
+        "many": MIDDLE,
+        # 화자가 둘 이상인 컷 — 마주 보게 해야 대화로 읽힌다. 여기만 두 마디를 쓴다.
+        "dialogue": "two characters facing each other, both " + MIDDLE.replace("subject MUST be", "MUST be"),
+    },
+    # 확산 전문 모델 — 위치 지시가 안 먹는다(ISSUES.md 「프롬프트로는 구도가 제어되지 않는다」).
+    # 넣어봐야 무시되면서 다른 어휘를 밀어내기만 하므로 **크기만** 남긴다.
+    # 위치는 ControlNet 스틱 피규어가 강제한다 (pose.place_subject).
+    "comfy": {
+        "scale": WIDE_SCALE,
+        "reserve": {0: "", 1: "", 2: ""},
+        "many": "",
+        "dialogue": "two characters facing each other",  # 관계는 장면 묘사라 통한다
+    },
+}
+
+DEFAULT_BACKEND = "gemini"
+
+
+def profile(backend: str | None = None) -> dict:
+    """백엔드 프로파일. 모르는 이름이면 기본값 — 새 백엔드를 붙이는 중에도 돌아가야 한다."""
+    return PROFILES.get(backend or DEFAULT_BACKEND, PROFILES[DEFAULT_BACKEND])
+
 
 MAX_TEXT_LEN = 40  # 컷당 대사 총 길이 상한. 넘으면 말풍선이 그림을 덮는다
 
@@ -264,7 +288,7 @@ def build_project(data: dict, title: str, source_text: str, seed_base: int | Non
                 "index": i,
                 "beat": cut.get("beat", ""),
                 "scene_en": cut["scene_en"],
-                # 비우면 전 컷 공통 크기(SUBJECT_SCALE)를 쓴다.
+                # 비우면 백엔드 프로파일의 공통 크기를 쓴다.
                 # 공간이 주인공이 아닌 컷만 여기에 따로 적는다.
                 "scale": cut.get("scale", ""),
                 "final_prompt": None,  # [3]에서 조립되어 기록된다
@@ -294,8 +318,12 @@ def build_project(data: dict, title: str, source_text: str, seed_base: int | Non
     }
 
 
-def reserve_hint(cut: dict) -> str:
-    """말풍선이 몇 개 들어가는지, 화자가 몇 명인지 보고 구도 지시를 만든다."""
+def reserve_hint(cut: dict, backend: str | None = None) -> str:
+    """말풍선이 몇 개 들어가는지, 화자가 몇 명인지 보고 구도 지시를 만든다.
+
+    지시가 실제로 먹히는지는 백엔드마다 다르므로 프로파일에서 가져온다.
+    """
+    prof = profile(backend)
     balloons = [
         t for t in cut.get("texts", []) if t.get("type") != "narration" and (t.get("content") or "").strip()
     ]
@@ -304,11 +332,11 @@ def reserve_hint(cut: dict) -> str:
 
     # 대화 컷은 인물 배치가 다르다 — 마주 보고 가운데 모여야 한다
     if len(speakers) > 1:
-        return RESERVE_DIALOGUE
-    return RESERVE.get(len(balloons), RESERVE_MANY)
+        return prof["dialogue"]
+    return prof["reserve"].get(len(balloons), prof["many"])
 
 
-def assemble_prompt(project: dict, cut: dict) -> str:
+def assemble_prompt(project: dict, cut: dict, backend: str | None = None) -> str:
     """컷 하나의 최종 프롬프트를 조립한다. 화풍·캐릭터·장면·크기·말풍선 자리 순서."""
     style = project["style"]
     # 전 컷 공통 크기가 기본이지만, 공간이 주인공이 아닌 컷은 따로 지정한다.
@@ -317,8 +345,8 @@ def assemble_prompt(project: dict, cut: dict) -> str:
         style["art_style_en"],
         style["character_en"],
         cut["scene_en"],
-        cut.get("scale") or SUBJECT_SCALE,
-        reserve_hint(cut),
+        cut.get("scale") or profile(backend)["scale"],
+        reserve_hint(cut, backend),
     ]
     return ", ".join(p.strip() for p in parts if p and p.strip())
 
@@ -422,6 +450,31 @@ def _demo() -> None:
         }
     )
     assert solo_twice == two, "화자가 한 명인데 대화 구도를 씁니다"
+
+    # 백엔드 프로파일 — 같은 컷도 백엔드에 따라 다른 지시를 받는다.
+    # SDXL 은 위치 지시를 무시하므로(ISSUES.md) 넣어봐야 다른 어휘만 밀어낸다.
+    solo = {"texts": [{"type": "dialogue", "content": "하나"}]}
+    assert reserve_hint(solo, "gemini") == one, "기본값이 gemini 프로파일이어야 합니다"
+    assert reserve_hint(solo, "comfy") == "", "comfy 에 위치 지시가 들어갔습니다"
+    # 모르는 백엔드는 기본값으로 떨어진다 — 새 백엔드를 붙이는 중에도 돌아야 한다
+    assert reserve_hint(solo, "새백엔드") == one
+
+    # 크기 지시는 어느 백엔드에서나 통한다 (ISSUES.md 「전신, 화면 1/3 → 성공」)
+    for backend in ("gemini", "comfy"):
+        assert "one third of the frame height" in profile(backend)["scale"], backend
+
+    # 대화 컷은 comfy 에서도 관계를 말한다 — 장면 묘사라 통하고, 위치 지시가 아니다
+    talk_comfy = reserve_hint(
+        {
+            "texts": [
+                {"type": "dialogue", "content": "봉투 필요하세요?", "speaker": "점원"},
+                {"type": "dialogue", "content": "아니요.", "speaker": "주인공"},
+            ]
+        },
+        "comfy",
+    )
+    assert "facing each other" in talk_comfy, talk_comfy
+    assert "third of the frame" not in talk_comfy, talk_comfy
 
     # 대사 1개짜리 컷의 프롬프트에는 인물 자리 지시가 실제로 들어간다
     cut_one = dict(project["cuts"][0], texts=[{"type": "dialogue", "content": "대사"}])
