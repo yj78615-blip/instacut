@@ -145,7 +145,6 @@ projects/<제목>/
 |---|---|---|
 | [#2](https://github.com/yj78615-blip/instacut/issues/2) | 인물 위치 검출을 로컬 VLM(Florence-2)으로 | 지금은 Gemini 질의라 컷당 비용이 든다. 로컬로 옮기면 무료 |
 | [#3](https://github.com/yj78615-blip/instacut/issues/3) | 캐릭터 LoRA 학습 | 8GB 에서 SDXL LoRA 학습이 되는지 미확인. 되면 캐릭터 비용이 초기 한 번으로 끝난다 |
-| [#4](https://github.com/yj78615-blip/instacut/issues/4) | 화자 라벨 불일치 — 모델이 후보 밖 이름을 반환한다 | 꼬리 방향만 영향받고 회피(P-7)는 정상이라 급하지 않다 |
 | [#5](https://github.com/yj78615-blip/instacut/issues/5) | `render` 재시도 — 이미지 대신 설명 텍스트만 오는 경우 | 재시도하면 대개 바로 성공한다. 한 컷만 다시 돌리면 되니 치명적이지 않다 |
 | [#6](https://github.com/yj78615-blip/instacut/issues/6) | 컷 순서 변경·삭제·삽입 | `edit` 은 컷 **안**만 고친다. 인덱스와 파일명이 묶여 있어 구조를 손봐야 한다 |
 | [#7](https://github.com/yj78615-blip/instacut/issues/7) | M3 인스타 자동 배포 | API 가 공개 URL 을 요구해 임시 호스팅이 필요하다. 캡션·해시태그도 아직 비어 있다 |
@@ -154,6 +153,10 @@ projects/<제목>/
 
 [#1](https://github.com/yj78615-blip/instacut/issues/1) **다중 화자**는 편의점 원고(`store.txt`)로 검증하며 닫혔다.
 `texts[].speaker` 를 인물 위치와 매칭해 꼬리를 건다 — 점원이 말하면 점원에게 간다.
+
+[#4](https://github.com/yj78615-blip/instacut/issues/4) **화자 라벨 불일치**도 닫혔다.
+모델이 후보 밖 이름(`주인공` 대신 `손님`)을 답해도 `parse_people` 이 후보 이름으로 맞춘다.
+맞출 수 없으면 **비워둔다** — 틀린 값보다 없는 값이 낫다.
 
 화면 구성 — 카메라 그리드, 샷 사이즈, 인물 배치를 프롬프트로 지시하는 방법은 [COMPOSITION.md](COMPOSITION.md) 에 정리했다. 요약하면 **구도 어휘는 모델에 따라 갈린다** — 촬영 용어는 어디서나 통하고, 영역 지정은 Nano Banana 에서만 통한다.
 
